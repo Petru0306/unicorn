@@ -191,10 +191,10 @@
                     </div>
                     <div class="col-md-4 text-end">
                         <button class="btn btn-light btn-modern" onclick="logout()">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </button>
-                    </div>
-                </div>
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
 
                 <!-- Storage Usage Bar -->
                 <div class="storage-bar">
@@ -229,8 +229,8 @@
                         
                         <div id="bucketsList">
                             <!-- Buckets will be loaded here -->
-                        </div>
-                    </div>
+                                </div>
+                            </div>
 
                     <!-- Activity Log -->
                     <div class="activity-log mt-4">
@@ -270,9 +270,9 @@
                                 <button class="btn btn-success btn-modern" onclick="showUploadModal()">
                                     <i class="fas fa-upload"></i> Upload
                                 </button>
-                            </div>
-                        </div>
                     </div>
+                </div>
+            </div>
 
                     <!-- Upload Zone -->
                     <div class="upload-zone" id="uploadZone">
@@ -286,7 +286,7 @@
                             <button class="btn btn-primary btn-modern" onclick="triggerFileInput()">
                                 <i class="fas fa-folder-open"></i> Choose Files
                             </button>
-                        </div>
+                                </div>
                         
                         <!-- Upload Form for File Naming -->
                         <div class="upload-form" id="uploadForm">
@@ -301,9 +301,9 @@
                                 <button class="btn btn-secondary btn-modern ms-2" onclick="cancelUpload()">
                                     <i class="fas fa-times"></i> Cancel
                                 </button>
-                            </div>
                         </div>
                     </div>
+                </div>
 
                     <!-- Files List -->
                     <div id="filesList">
@@ -330,10 +330,10 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="bucketName" class="form-label">Bucket Name</label>
+                        <div class="mb-3">
+                            <label for="bucketName" class="form-label">Bucket Name</label>
                         <input type="text" class="form-control" id="bucketName" placeholder="Enter bucket name">
-                    </div>
+                        </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -482,7 +482,7 @@
                             <small class="text-muted">${bucket.fileCount} files • ${sizeMB} MB</small>
                         </div>
                         <i class="fas fa-chevron-right"></i>
-                    </div>
+                        </div>
                 `;
                 
                 bucketsList.appendChild(bucketItem);
@@ -598,8 +598,8 @@
                                 </button>
                             </div>
                         </div>
-                    </div>
-                `;
+                            </div>
+                        `;
                 
                 filesList.appendChild(fileCard);
             });
@@ -613,7 +613,7 @@
                 return { icon: 'fas fa-file-pdf', class: 'pdf-icon', color: '#ef4444' };
             } else if (contentType.startsWith('text/')) {
                 return { icon: 'fas fa-file-alt', class: 'text-icon', color: '#3b82f6' };
-            } else {
+                } else {
                 return { icon: 'fas fa-file', class: 'other-icon', color: '#6b7280' };
             }
         }
@@ -668,8 +668,8 @@
                             <small class="text-muted">${activity.resourceName}</small>
                             <br>
                             <small class="text-muted">${timestamp}</small>
-                        </div>
                     </div>
+                            </div>
                 `;
                 
                 activityLog.appendChild(activityItem);
@@ -773,13 +773,13 @@
             showLoading(true);
 
             try {
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
                     const customNameInput = document.getElementById(`customName_${i}`);
                     const customName = customNameInput ? customNameInput.value.trim() : file.name;
                     
-                    const formData = new FormData();
-                    formData.append('file', file);
+                const formData = new FormData();
+                formData.append('file', file);
                     formData.append('customName', customName);
 
                     const response = await fetch(`/api/uws-s3/buckets/${currentBucket}/files`, {
@@ -864,25 +864,25 @@
 
             try {
                 const response = await fetch('/api/uws-s3/buckets', {
-                    method: 'POST',
-                    headers: {
+                        method: 'POST',
+                        headers: {
                         'Authorization': 'Bearer ' + currentToken,
                         'Content-Type': 'application/json'
-                    },
+                        },
                     body: JSON.stringify({ name: bucketName })
-                });
+                    });
 
-                if (response.ok) {
+                    if (response.ok) {
                     const modal = bootstrap.Modal.getInstance(document.getElementById('createBucketModal'));
                     modal.hide();
                     document.getElementById('bucketName').value = '';
                     loadBuckets();
                     loadActivityLog();
-                } else {
-                    const error = await response.json();
+                    } else {
+                        const error = await response.json();
                     alert('Error: ' + error.error);
-                }
-            } catch (error) {
+                    }
+                } catch (error) {
                 console.error('Error creating bucket:', error);
                 alert('Error creating bucket');
             }
@@ -929,7 +929,7 @@
                 return response.blob();
             }).then(blob => {
                 // Create download link with proper filename
-                const url = window.URL.createObjectURL(blob);
+                    const url = window.URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
                 
@@ -939,7 +939,7 @@
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
+                    window.URL.revokeObjectURL(url);
                 console.log('Download completed successfully');
             }).catch(error => {
                 console.error('Download error:', error);
