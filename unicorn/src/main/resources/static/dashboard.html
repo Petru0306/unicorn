@@ -247,6 +247,39 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
+                            <h5>🤖 UWS-AI Serverless AI Inference Service</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="lead">Deploy and invoke AI functions with ease. Powered by advanced machine learning models.</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Features:</h6>
+                                    <ul>
+                                        <li>Create AI functions with prebuilt models (Sentiment Analysis, Image Labeling, Code Explainer)</li>
+                                        <li>Support for text, image, and code input types</li>
+                                        <li>Real-time AI inference with mock outputs</li>
+                                        <li>Execution history tracking and performance monitoring</li>
+                                        <li>Resource limits and daily execution quotas</li>
+                                        <li>Secure JWT authentication and user isolation</li>
+                                        <li>Modern drag-and-drop interface for image uploads</li>
+                                        <li>Integration with UWS-Lambda for workflow automation</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <a href="/uws-ai.html" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-brain"></i> Access UWS-AI
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
                             <h5>🔐 UWS-Secrets Manager</h5>
                         </div>
                         <div class="card-body">
@@ -422,6 +455,60 @@
                                             <td><code>/api/secrets/stats</code></td>
                                             <td>GET</td>
                                             <td>Get secret statistics</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/ai/functions</code></td>
+                                            <td>GET</td>
+                                            <td>List user AI functions</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/ai/functions</code></td>
+                                            <td>POST</td>
+                                            <td>Create new AI function</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/ai/functions/{id}/invoke</code></td>
+                                            <td>POST</td>
+                                            <td>Invoke AI function with text/code</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/ai/functions/{id}/invoke-image</code></td>
+                                            <td>POST</td>
+                                            <td>Invoke AI function with image</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/ai/functions/{id}/history</code></td>
+                                            <td>GET</td>
+                                            <td>Get execution history</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/ai/functions/{id}</code></td>
+                                            <td>DELETE</td>
+                                            <td>Delete AI function</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/ai/statistics</code></td>
+                                            <td>GET</td>
+                                            <td>Get AI service statistics</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/ai/models</code></td>
+                                            <td>GET</td>
+                                            <td>Get available AI models</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/ai/types</code></td>
+                                            <td>GET</td>
+                                            <td>Get available function types</td>
                                             <td><span class="badge bg-success">Active</span></td>
                                         </tr>
                                     </tbody>

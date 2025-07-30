@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UWS-AI - Serverless AI Inference Service</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .header-section {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            margin-bottom: 1rem;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .function-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .function-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #764ba2, #667eea);
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 600;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #dc3545, #fd7e14);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 600;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #ffc107, #fd7e14);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .result-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            border-left: 4px solid #667eea;
+            margin-top: 1rem;
+        }
+        
+        .execution-history {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .history-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid #28a745;
+        }
+        
+        .history-item.error {
+            border-left-color: #dc3545;
+        }
+        
+        .code-editor {
+            font-family: 'Courier New', monospace;
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 200px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .spinner-border {
+            color: #667eea;
+        }
+        
+        .badge {
+            font-size: 0.8em;
+            padding: 0.5em 0.8em;
+        }
+        
+        .api-endpoint {
+            background: #e9ecef;
+            border-radius: 5px;
+            padding: 0.5rem;
+            font-family: monospace;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+        
+        .file-upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-area:hover {
+            background: #e9ecef;
+            border-color: #764ba2;
+        }
+        
+        .file-upload-area.dragover {
+            background: #667eea;
+            color: white;
+            border-color: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/dashboard.html">🦄 Unicorn</a>
+            <div class="navbar-nav ms-auto">
+                <a href="/dashboard.html" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <button class="btn btn-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="main-container">
+            <!-- Header Section -->
+            <div class="header-section">
+                <h1><i class="fas fa-brain"></i> UWS-AI Serverless AI Inference Service</h1>
+                <p class="lead mb-0">Deploy and invoke AI functions with ease. Powered by advanced machine learning models.</p>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stats-card text-center">
+                        <h3><i class="fas fa-robot text-primary"></i></h3>
+                        <h4 id="totalFunctions">0</h4>
+                        <p class="text-muted">AI Functions</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-card text-center">
+                        <h3><i class="fas fa-play text-success"></i></h3>
+                        <h4 id="totalExecutions">0</h4>
+                        <p class="text-muted">Total Executions</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-card text-center">
+                        <h3><i class="fas fa-calendar-day text-warning"></i></h3>
+                        <h4 id="todayExecutions">0</h4>
+                        <p class="text-muted">Today's Executions</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-card text-center">
+                        <h3><i class="fas fa-chart-line text-info"></i></h3>
+                        <h4 id="maxFunctions">10</h4>
+                        <p class="text-muted">Max Functions</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Function Section -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="function-card">
+                        <h5><i class="fas fa-plus-circle text-primary"></i> Create New AI Function</h5>
+                        <form id="createFunctionForm">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label for="functionName" class="form-label">Function Name</label>
+                                    <input type="text" class="form-control" id="functionName" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="functionType" class="form-label">Type</label>
+                                    <select class="form-select" id="functionType" required>
+                                        <option value="">Select Type</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="functionModel" class="form-label">Model</label>
+                                    <select class="form-select" id="functionModel" required>
+                                        <option value="">Select Model</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-plus"></i> Create Function
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Functions List -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="function-card">
+                        <h5><i class="fas fa-list text-success"></i> Your AI Functions</h5>
+                        <div id="functionsList">
+                            <div class="loading">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading AI functions...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Function Invocation Section -->
+            <div class="row mb-4" id="invocationSection" style="display: none;">
+                <div class="col-12">
+                    <div class="function-card">
+                        <h5><i class="fas fa-play-circle text-warning"></i> Invoke AI Function</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="invokeInput" class="form-label">Input</label>
+                                <div id="inputArea">
+                                    <!-- Dynamic input area based on function type -->
+                                </div>
+                                <button type="button" class="btn btn-success mt-3" onclick="invokeFunction()">
+                                    <i class="fas fa-play"></i> Invoke Function
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Result</label>
+                                <div id="resultArea" class="result-box" style="display: none;">
+                                    <pre id="resultOutput"></pre>
+                                </div>
+                                <div id="invokeLoading" class="loading">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Processing...</span>
+                                    </div>
+                                    <p class="mt-2">Processing with AI...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Execution History -->
+            <div class="row mb-4" id="historySection" style="display: none;">
+                <div class="col-12">
+                    <div class="function-card">
+                        <h5><i class="fas fa-history text-info"></i> Execution History</h5>
+                        <div id="executionHistory" class="execution-history">
+                            <!-- History items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        let currentFunctions = [];
+        let currentFunction = null;
+        let availableModels = {};
+        let availableTypes = [];
+
+        // Check authentication on page load
+        window.addEventListener('load', function() {
+            const token = localStorage.getItem('jwtToken');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            loadStatistics();
+            loadAvailableModels();
+            loadAvailableTypes();
+            loadFunctions();
+        });
+
+        function loadStatistics() {
+            fetch('/api/ai/statistics', {
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('totalFunctions').textContent = data.totalFunctions || 0;
+                document.getElementById('totalExecutions').textContent = data.totalExecutions || 0;
+                document.getElementById('todayExecutions').textContent = data.todayExecutions || 0;
+                document.getElementById('maxFunctions').textContent = data.maxFunctionsPerUser || 10;
+            })
+            .catch(error => {
+                console.error('Error loading statistics:', error);
+            });
+        }
+
+        function loadAvailableModels() {
+            fetch('/api/ai/models', {
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                availableModels = data;
+                const modelSelect = document.getElementById('functionModel');
+                modelSelect.innerHTML = '<option value="">Select Model</option>';
+                
+                Object.entries(data).forEach(([key, value]) => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = value;
+                    modelSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading models:', error);
+            });
+        }
+
+        function loadAvailableTypes() {
+            fetch('/api/ai/types', {
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                availableTypes = data;
+                const typeSelect = document.getElementById('functionType');
+                typeSelect.innerHTML = '<option value="">Select Type</option>';
+                
+                data.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+                    typeSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading types:', error);
+            });
+        }
+
+        function loadFunctions() {
+            const functionsList = document.getElementById('functionsList');
+            functionsList.innerHTML = '<div class="loading"><div class="spinner-border" role="status"></div><p class="mt-2">Loading AI functions...</p></div>';
+
+            fetch('/api/ai/functions', {
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                currentFunctions = data;
+                displayFunctions(data);
+            })
+            .catch(error => {
+                console.error('Error loading functions:', error);
+                functionsList.innerHTML = '<div class="alert alert-danger">Error loading functions</div>';
+            });
+        }
+
+        function displayFunctions(functions) {
+            const functionsList = document.getElementById('functionsList');
+            
+            if (functions.length === 0) {
+                functionsList.innerHTML = '<div class="alert alert-info">No AI functions created yet. Create your first function above!</div>';
+                return;
+            }
+
+            let html = '<div class="table-responsive"><table class="table table-hover">';
+            html += '<thead><tr><th>Name</th><th>Type</th><th>Model</th><th>Created</th><th>Executions Today</th><th>Actions</th></tr></thead><tbody>';
+            
+            functions.forEach(function(func) {
+                const createdAt = new Date(func.createdAt).toLocaleDateString();
+                html += `<tr>
+                    <td><strong>${func.name}</strong></td>
+                    <td><span class="badge bg-primary">${func.type}</span></td>
+                    <td><span class="badge bg-info">${availableModels[func.model] || func.model}</span></td>
+                    <td>${createdAt}</td>
+                    <td><span class="badge bg-warning">${func.currentExecutionsToday}/${func.maxExecutionsPerDay}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-success me-1" onclick="selectFunction(${func.id})">
+                            <i class="fas fa-play"></i> Invoke
+                        </button>
+                        <button class="btn btn-sm btn-info me-1" onclick="showHistory(${func.id})">
+                            <i class="fas fa-history"></i> History
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteFunction(${func.id})">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table></div>';
+            functionsList.innerHTML = html;
+        }
+
+        document.getElementById('createFunctionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('functionName').value;
+            const type = document.getElementById('functionType').value;
+            const model = document.getElementById('functionModel').value;
+
+            fetch('/api/ai/functions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                },
+                body: JSON.stringify({ name, type, model })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    alert('AI function created successfully!');
+                    document.getElementById('createFunctionForm').reset();
+                    loadFunctions();
+                    loadStatistics();
+                }
+            })
+            .catch(error => {
+                console.error('Error creating function:', error);
+                alert('Error creating function');
+            });
+        });
+
+        function selectFunction(functionId) {
+            currentFunction = currentFunctions.find(f => f.id === functionId);
+            if (!currentFunction) return;
+
+            document.getElementById('invocationSection').style.display = 'block';
+            document.getElementById('resultArea').style.display = 'none';
+            
+            // Create input area based on function type
+            const inputArea = document.getElementById('inputArea');
+            inputArea.innerHTML = '';
+
+            switch (currentFunction.type) {
+                case 'text':
+                    inputArea.innerHTML = `
+                        <textarea class="form-control" id="invokeInput" rows="5" 
+                            placeholder="Enter text to analyze..."></textarea>
+                    `;
+                    break;
+                case 'image':
+                    inputArea.innerHTML = `
+                        <div class="file-upload-area" id="fileUploadArea">
+                            <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                            <p>Drag and drop an image here or click to select</p>
+                            <input type="file" id="imageFile" accept="image/*" style="display: none;">
+                        </div>
+                        <div id="imagePreview" style="display: none;">
+                            <img id="previewImg" class="img-fluid rounded mt-2" style="max-height: 200px;">
+                        </div>
+                    `;
+                    setupImageUpload();
+                    break;
+                case 'code':
+                    inputArea.innerHTML = `
+                        <textarea class="form-control code-editor" id="invokeInput" rows="10" 
+                            placeholder="Enter code to analyze..."></textarea>
+                    `;
+                    break;
+            }
+        }
+
+        function setupImageUpload() {
+            const fileUploadArea = document.getElementById('fileUploadArea');
+            const imageFile = document.getElementById('imageFile');
+            const imagePreview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+
+            fileUploadArea.addEventListener('click', () => imageFile.click());
+            
+            fileUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileUploadArea.classList.add('dragover');
+            });
+            
+            fileUploadArea.addEventListener('dragleave', () => {
+                fileUploadArea.classList.remove('dragover');
+            });
+            
+            fileUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileUploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleImageFile(files[0]);
+                }
+            });
+            
+            imageFile.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleImageFile(e.target.files[0]);
+                }
+            });
+        }
+
+        function handleImageFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('imagePreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function invokeFunction() {
+            if (!currentFunction) return;
+
+            const loadingDiv = document.getElementById('invokeLoading');
+            const resultArea = document.getElementById('resultArea');
+            
+            loadingDiv.style.display = 'block';
+            resultArea.style.display = 'none';
+
+            let input = '';
+            let url = `/api/ai/functions/${currentFunction.id}/invoke`;
+            let method = 'POST';
+            let headers = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+            };
+            let body = {};
+
+            if (currentFunction.type === 'image') {
+                const imageFile = document.getElementById('imageFile').files[0];
+                if (!imageFile) {
+                    alert('Please select an image file');
+                    loadingDiv.style.display = 'none';
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('image', imageFile);
+                
+                url = `/api/ai/functions/${currentFunction.id}/invoke-image`;
+                headers = {
+                    'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                };
+                body = formData;
+                method = 'POST';
+            } else {
+                input = document.getElementById('invokeInput').value;
+                if (!input.trim()) {
+                    alert('Please enter input');
+                    loadingDiv.style.display = 'none';
+                    return;
+                }
+                body = JSON.stringify({ input });
+            }
+
+            fetch(url, {
+                method: method,
+                headers: headers,
+                body: body
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingDiv.style.display = 'none';
+                resultArea.style.display = 'block';
+                
+                const resultOutput = document.getElementById('resultOutput');
+                if (data.error) {
+                    resultOutput.textContent = 'Error: ' + data.error;
+                    resultOutput.className = 'text-danger';
+                } else {
+                    try {
+                        // Try to format JSON output
+                        const formattedOutput = JSON.stringify(JSON.parse(data.output), null, 2);
+                        resultOutput.textContent = formattedOutput;
+                        resultOutput.className = 'text-success';
+                    } catch (e) {
+                        resultOutput.textContent = data.output;
+                        resultOutput.className = 'text-success';
+                    }
+                }
+                
+                // Refresh statistics and show history
+                loadStatistics();
+                showHistory(currentFunction.id);
+            })
+            .catch(error => {
+                loadingDiv.style.display = 'none';
+                console.error('Error invoking function:', error);
+                alert('Error invoking function');
+            });
+        }
+
+        function showHistory(functionId) {
+            fetch(`/api/ai/functions/${functionId}/history`, {
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const historySection = document.getElementById('historySection');
+                const executionHistory = document.getElementById('executionHistory');
+                
+                historySection.style.display = 'block';
+                
+                if (data.length === 0) {
+                    executionHistory.innerHTML = '<div class="alert alert-info">No execution history yet.</div>';
+                    return;
+                }
+
+                let html = '';
+                data.slice(0, 10).forEach(execution => { // Show last 10 executions
+                    const executedAt = new Date(execution.executedAt).toLocaleString();
+                    const statusClass = execution.status === 'success' ? '' : 'error';
+                    
+                    html += `<div class="history-item ${statusClass}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>Executed:</strong> ${executedAt}<br>
+                                <strong>Status:</strong> <span class="badge bg-${execution.status === 'success' ? 'success' : 'danger'}">${execution.status}</span><br>
+                                <strong>Execution Time:</strong> ${execution.executionTimeMs}ms
+                            </div>
+                            <small class="text-muted">ID: ${execution.id}</small>
+                        </div>
+                        ${execution.errorMessage ? `<div class="mt-2"><strong>Error:</strong> ${execution.errorMessage}</div>` : ''}
+                    </div>`;
+                });
+                
+                executionHistory.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error loading history:', error);
+            });
+        }
+
+        function deleteFunction(functionId) {
+            if (!confirm('Are you sure you want to delete this AI function?')) {
+                return;
+            }
+
+            fetch(`/api/ai/functions/${functionId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    alert('AI function deleted successfully!');
+                    loadFunctions();
+                    loadStatistics();
+                    
+                    // Hide invocation section if the deleted function was selected
+                    if (currentFunction && currentFunction.id === functionId) {
+                        document.getElementById('invocationSection').style.display = 'none';
+                        currentFunction = null;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting function:', error);
+                alert('Error deleting function');
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem('jwtToken');
+            alert('Logged out successfully!');
+            window.location.href = '/index.html';
+        }
+    </script>
+</body>
+</html> 
