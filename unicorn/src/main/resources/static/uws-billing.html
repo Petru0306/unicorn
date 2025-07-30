@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UWS-Billing Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --billing-primary: #ff6b35;
+            --billing-secondary: #f7931e;
+            --billing-success: #28a745;
+            --billing-warning: #ffc107;
+            --billing-danger: #dc3545;
+            --billing-info: #17a2b8;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .billing-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .billing-header {
+            background: linear-gradient(45deg, var(--billing-primary), var(--billing-secondary));
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            border-left: 4px solid var(--billing-primary);
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stats-card.success {
+            border-left-color: var(--billing-success);
+        }
+
+        .stats-card.warning {
+            border-left-color: var(--billing-warning);
+        }
+
+        .stats-card.danger {
+            border-left-color: var(--billing-danger);
+        }
+
+        .btn-billing {
+            background: linear-gradient(45deg, var(--billing-primary), var(--billing-secondary));
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-billing:hover {
+            background: linear-gradient(45deg, var(--billing-secondary), var(--billing-primary));
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 1rem 0;
+        }
+
+        .alert-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--billing-warning);
+        }
+
+        .alert-card.triggered {
+            border-left-color: var(--billing-danger);
+            background: linear-gradient(135deg, #fff5f5, #ffe6e6);
+        }
+
+        .pricing-table {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .pricing-table th {
+            background: linear-gradient(45deg, var(--billing-primary), var(--billing-secondary));
+            color: white;
+            border: none;
+        }
+
+        .time-filter {
+            background: white;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .cost-badge {
+            background: linear-gradient(45deg, var(--billing-primary), var(--billing-secondary));
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .service-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            margin-right: 1rem;
+        }
+
+        .service-s3 { background: linear-gradient(45deg, #ff6b35, #f7931e); }
+        .service-lambda { background: linear-gradient(45deg, #667eea, #764ba2); }
+        .service-compute { background: linear-gradient(45deg, #28a745, #20c997); }
+        .service-rdb { background: linear-gradient(45deg, #17a2b8, #6f42c1); }
+        .service-nosql { background: linear-gradient(45deg, #fd7e14, #e83e8c); }
+        .service-sqs { background: linear-gradient(45deg, #6f42c1, #e83e8c); }
+        .service-secrets { background: linear-gradient(45deg, #dc3545, #fd7e14); }
+        .service-ai { background: linear-gradient(45deg, #20c997, #17a2b8); }
+        .service-dns { background: linear-gradient(45deg, #6c757d, #495057); }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner-border {
+            color: var(--billing-primary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/dashboard.html">
+                <i class="fas fa-unicorn"></i> Unicorn - UWS-Billing
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a href="/dashboard.html" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <button class="btn btn-billing me-2" onclick="testBilling()">
+                    <i class="fas fa-flask"></i> Test Billing
+                </button>
+                <button class="btn btn-billing" onclick="generateSampleData()">
+                    <i class="fas fa-database"></i> Generate Sample Data
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="billing-header">
+            <h1><i class="fas fa-credit-card"></i> UWS-Billing & Cost Management</h1>
+            <p class="lead mb-0">Comprehensive billing and cost management for all UWS services</p>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading billing data...</p>
+        </div>
+
+        <!-- Time Filter -->
+        <div class="time-filter">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-0"><i class="fas fa-clock"></i> Time Range</h5>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary" onclick="setTimeRange('1hour')">1 Hour</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="setTimeRange('24hours')">24 Hours</button>
+                        <button type="button" class="btn btn-outline-primary active" onclick="setTimeRange('30days')">30 Days</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="setTimeRange('90days')">90 Days</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="row" id="summaryStats">
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <div class="d-flex align-items-center">
+                        <div class="service-icon service-s3">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-1" id="totalCost">$0.00</h4>
+                            <p class="text-muted mb-0">Total Cost</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card success">
+                    <div class="d-flex align-items-center">
+                        <div class="service-icon service-lambda">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-1" id="currentMonthCost">$0.00</h4>
+                            <p class="text-muted mb-0">Current Month</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card warning">
+                    <div class="d-flex align-items-center">
+                        <div class="service-icon service-compute">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-1" id="activeAlerts">0</h4>
+                            <p class="text-muted mb-0">Active Alerts</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card danger">
+                    <div class="d-flex align-items-center">
+                        <div class="service-icon service-rdb">
+                            <i class="fas fa-trending-up"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-1" id="costChange">0%</h4>
+                            <p class="text-muted mb-0">vs Last Month</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="billing-card">
+                    <h5><i class="fas fa-chart-area"></i> Cost Trends</h5>
+                    <div class="chart-container">
+                        <canvas id="costTrendsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="billing-card">
+                    <h5><i class="fas fa-chart-pie"></i> Cost by Service</h5>
+                    <div class="chart-container">
+                        <canvas id="serviceCostChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Billing and Alerts -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="billing-card">
+                    <h5><i class="fas fa-calendar-alt"></i> Monthly Billing Overview</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Cost</th>
+                                    <th>Usage</th>
+                                    <th>Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody id="monthlyBillingTable">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="billing-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5><i class="fas fa-bell"></i> Billing Alerts</h5>
+                        <button class="btn btn-billing btn-sm" onclick="showCreateAlertModal()">
+                            <i class="fas fa-plus"></i> New Alert
+                        </button>
+                    </div>
+                    <div id="alertsContainer">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pricing Information -->
+        <div class="billing-card">
+            <h5><i class="fas fa-tags"></i> Service Pricing</h5>
+            <div class="table-responsive">
+                <table class="table pricing-table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Resource Type</th>
+                            <th>Price</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pricingTable">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Alert Modal -->
+    <div class="modal fade" id="createAlertModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Billing Alert</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="alertForm">
+                        <div class="mb-3">
+                            <label class="form-label">Alert Name</label>
+                            <input type="text" class="form-control" id="alertName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Alert Type</label>
+                            <select class="form-select" id="alertType" required>
+                                <option value="SPENDING_LIMIT">Spending Limit</option>
+                                <option value="COST_THRESHOLD">Cost Threshold</option>
+                                <option value="USAGE_THRESHOLD">Usage Threshold</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Threshold Value ($)</label>
+                            <input type="number" class="form-control" id="thresholdValue" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Service (Optional)</label>
+                            <select class="form-select" id="serviceName">
+                                <option value="">All Services</option>
+                                <option value="UWS-S3">UWS-S3</option>
+                                <option value="UWS-Lambda">UWS-Lambda</option>
+                                <option value="UWS-Compute">UWS-Compute</option>
+                                <option value="RDB">RDB</option>
+                                <option value="NoSQL">NoSQL</option>
+                                <option value="SQS">SQS</option>
+                                <option value="Secrets Manager">Secrets Manager</option>
+                                <option value="AI Service">AI Service</option>
+                                <option value="DNS Service">DNS Service</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Time Period</label>
+                            <select class="form-select" id="timePeriod" required>
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="emailNotification">
+                                <label class="form-check-label" for="emailNotification">
+                                    Email Notification
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Webhook URL (Optional)</label>
+                            <input type="url" class="form-control" id="webhookUrl" placeholder="https://your-webhook-url.com">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-billing" onclick="createAlert()">Create Alert</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let currentTimeRange = '30days';
+        let costTrendsChart = null;
+        let serviceCostChart = null;
+
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('jwtToken');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            loadDashboardData();
+        });
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            showLoading(true);
+            try {
+                await Promise.all([
+                    loadBillingSummary(),
+                    loadMonthlyBilling(),
+                    loadCostTrends(),
+                    loadAlerts(),
+                    loadPricingInfo()
+                ]);
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                if (error.message.includes('401') || error.message.includes('403')) {
+                    window.location.href = '/login.html';
+                }
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Load billing summary
+        async function loadBillingSummary() {
+            const token = localStorage.getItem('jwtToken');
+            const response = await fetch(`/api/billing/summary?timeRange=${currentTimeRange}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            // Update summary stats
+            document.getElementById('totalCost').textContent = formatCurrency(data.totalCost);
+            
+            // Update other stats (these would come from monthly data)
+            // For now, we'll use the total cost as current month
+            document.getElementById('currentMonthCost').textContent = formatCurrency(data.totalCost);
+        }
+
+        // Load monthly billing data
+        async function loadMonthlyBilling() {
+            const token = localStorage.getItem('jwtToken');
+            const response = await fetch('/api/billing/monthly', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            // Update monthly billing table
+            updateMonthlyBillingTable(data);
+        }
+
+        // Load cost trends
+        async function loadCostTrends() {
+            const token = localStorage.getItem('jwtToken');
+            const response = await fetch(`/api/billing/trends?timeRange=${currentTimeRange}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            // Update cost trends chart
+            updateCostTrendsChart(data);
+        }
+
+        // Load alerts
+        async function loadAlerts() {
+            const token = localStorage.getItem('jwtToken');
+            const response = await fetch('/api/billing/alerts', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const alerts = await response.json();
+            
+            // Update alerts container
+            updateAlertsContainer(alerts);
+            document.getElementById('activeAlerts').textContent = alerts.length;
+        }
+
+        // Load pricing information
+        async function loadPricingInfo() {
+            const token = localStorage.getItem('jwtToken');
+            const response = await fetch('/api/billing/pricing', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const pricing = await response.json();
+            
+            // Update pricing table
+            updatePricingTable(pricing);
+        }
+
+        // Update monthly billing table
+        function updateMonthlyBillingTable(data) {
+            const tableBody = document.getElementById('monthlyBillingTable');
+            tableBody.innerHTML = '';
+
+            if (data.costByService) {
+                Object.entries(data.costByService).forEach(([service, cost]) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="service-icon service-${getServiceClass(service)}">
+                                    <i class="fas ${getServiceIcon(service)}"></i>
+                                </div>
+                                ${service}
+                            </div>
+                        </td>
+                        <td><span class="cost-badge">${formatCurrency(cost)}</span></td>
+                        <td>${getRandomUsage()}</td>
+                        <td><span class="text-success"><i class="fas fa-arrow-up"></i> +5%</span></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+        }
+
+        // Update cost trends chart
+        function updateCostTrendsChart(data) {
+            const ctx = document.getElementById('costTrendsChart').getContext('2d');
+            
+            if (costTrendsChart) {
+                costTrendsChart.destroy();
+            }
+
+            const labels = data.map(item => `${item[0]}:00`);
+            const costs = data.map(item => parseFloat(item[1] || 0));
+
+            costTrendsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Cost ($)',
+                        data: costs,
+                        borderColor: '#ff6b35',
+                        backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update service cost chart
+        function updateServiceCostChart(data) {
+            const ctx = document.getElementById('serviceCostChart').getContext('2d');
+            
+            if (serviceCostChart) {
+                serviceCostChart.destroy();
+            }
+
+            const services = Object.keys(data);
+            const costs = Object.values(data);
+
+            serviceCostChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: services,
+                    datasets: [{
+                        data: costs,
+                        backgroundColor: [
+                            '#ff6b35', '#667eea', '#28a745', '#17a2b8',
+                            '#fd7e14', '#6f42c1', '#dc3545', '#20c997', '#6c757d'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update alerts container
+        function updateAlertsContainer(alerts) {
+            const container = document.getElementById('alertsContainer');
+            container.innerHTML = '';
+
+            if (alerts.length === 0) {
+                container.innerHTML = '<p class="text-muted">No alerts configured</p>';
+                return;
+            }
+
+            alerts.forEach(alert => {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert-card ${alert.status === 'TRIGGERED' ? 'triggered' : ''}`;
+                alertDiv.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">${alert.alertName}</h6>
+                            <p class="mb-1 text-muted">${alert.alertType} - ${alert.timePeriod}</p>
+                            <small class="text-muted">Threshold: $${alert.thresholdValue}</small>
+                        </div>
+                        <span class="badge ${alert.status === 'TRIGGERED' ? 'bg-danger' : 'bg-success'}">${alert.status}</span>
+                    </div>
+                `;
+                container.appendChild(alertDiv);
+            });
+        }
+
+        // Update pricing table
+        function updatePricingTable(pricing) {
+            const tableBody = document.getElementById('pricingTable');
+            tableBody.innerHTML = '';
+
+            Object.entries(pricing).forEach(([service, prices]) => {
+                Object.entries(prices).forEach(([resource, price]) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${service}</strong></td>
+                        <td>${resource.replace(/_/g, ' ').toUpperCase()}</td>
+                        <td><span class="cost-badge">${price}</span></td>
+                        <td>${getPricingDescription(service, resource)}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            });
+        }
+
+        // Set time range
+        function setTimeRange(range) {
+            currentTimeRange = range;
+            
+            // Update active button
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadDashboardData();
+        }
+
+        // Show create alert modal
+        function showCreateAlertModal() {
+            const modal = new bootstrap.Modal(document.getElementById('createAlertModal'));
+            modal.show();
+        }
+
+        // Create alert
+        async function createAlert() {
+            const form = document.getElementById('alertForm');
+            const formData = new FormData(form);
+            
+            const alertData = {
+                alertName: document.getElementById('alertName').value,
+                alertType: document.getElementById('alertType').value,
+                thresholdValue: parseFloat(document.getElementById('thresholdValue').value),
+                serviceName: document.getElementById('serviceName').value || null,
+                timePeriod: document.getElementById('timePeriod').value,
+                emailNotification: document.getElementById('emailNotification').checked,
+                webhookUrl: document.getElementById('webhookUrl').value || null
+            };
+
+            try {
+                const token = localStorage.getItem('jwtToken');
+                const response = await fetch('/api/billing/alerts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(alertData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    // Close modal and reload alerts
+                    bootstrap.Modal.getInstance(document.getElementById('createAlertModal')).hide();
+                    form.reset();
+                    loadAlerts();
+                }
+            } catch (error) {
+                console.error('Error creating alert:', error);
+                alert('Failed to create alert: ' + error.message);
+            }
+        }
+
+        // Test billing integration
+        async function testBilling() {
+            try {
+                const token = localStorage.getItem('jwtToken');
+                const response = await fetch('/api/billing/test-billing', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Test billing event recorded successfully! Check the billing dashboard for the new event.');
+                    loadDashboardData();
+                }
+            } catch (error) {
+                console.error('Error testing billing:', error);
+                alert('Failed to test billing: ' + error.message);
+            }
+        }
+
+        // Generate sample data
+        async function generateSampleData() {
+            try {
+                const token = localStorage.getItem('jwtToken');
+                const response = await fetch('/api/billing/generate-sample-data', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Sample billing data generated successfully!');
+                    loadDashboardData();
+                }
+            } catch (error) {
+                console.error('Error generating sample data:', error);
+                alert('Failed to generate sample data: ' + error.message);
+            }
+        }
+
+        // Utility functions
+        function formatCurrency(amount) {
+            if (amount === null || amount === undefined || amount === 0) {
+                return '$0.00';
+            }
+            
+            // For very small amounts, show more decimal places
+            if (amount < 0.01) {
+                return '$' + amount.toFixed(6);
+            } else if (amount < 1) {
+                return '$' + amount.toFixed(4);
+            } else {
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD'
+                }).format(amount);
+            }
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loadingIndicator');
+            if (show) {
+                loading.classList.add('show');
+            } else {
+                loading.classList.remove('show');
+            }
+        }
+
+        function getServiceClass(service) {
+            const serviceMap = {
+                'UWS-S3': 's3',
+                'UWS-Lambda': 'lambda',
+                'UWS-Compute': 'compute',
+                'RDB': 'rdb',
+                'NoSQL': 'nosql',
+                'SQS': 'sqs',
+                'Secrets Manager': 'secrets',
+                'AI Service': 'ai',
+                'DNS Service': 'dns'
+            };
+            return serviceMap[service] || 's3';
+        }
+
+        function getServiceIcon(service) {
+            const iconMap = {
+                'UWS-S3': 'fa-cloud',
+                'UWS-Lambda': 'fa-bolt',
+                'UWS-Compute': 'fa-server',
+                'RDB': 'fa-database',
+                'NoSQL': 'fa-table',
+                'SQS': 'fa-envelope',
+                'Secrets Manager': 'fa-key',
+                'AI Service': 'fa-brain',
+                'DNS Service': 'fa-globe'
+            };
+            return iconMap[service] || 'fa-cog';
+        }
+
+        function getRandomUsage() {
+            const usages = ['1.2 GB', '150 requests', '8.5 hours', '2.3 GB', '45 messages'];
+            return usages[Math.floor(Math.random() * usages.length)];
+        }
+
+        function getPricingDescription(service, resource) {
+            const descriptions = {
+                'UWS-S3': {
+                    'storage_gb': 'Storage per GB per month',
+                    'request_put': 'PUT requests',
+                    'request_get': 'GET requests',
+                    'data_transfer_out': 'Data transfer out per GB'
+                },
+                'UWS-Lambda': {
+                    'request': 'Function invocations',
+                    'duration_ms': 'Duration per 100ms',
+                    'memory_gb': 'Memory per GB-second'
+                }
+                // Add more descriptions as needed
+            };
+            
+            return descriptions[service]?.[resource] || 'Usage-based pricing';
+        }
+    </script>
+</body>
+</html> 
