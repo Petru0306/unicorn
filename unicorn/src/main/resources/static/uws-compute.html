@@ -136,6 +136,15 @@
             <!-- Alert Container -->
             <div id="alert-container"></div>
 
+            <!-- Docker Status -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="alert alert-info" id="docker-status">
+                        <i class="fas fa-spinner fa-spin"></i> Checking Docker status...
+                    </div>
+                </div>
+            </div>
+
             <!-- Statistics -->
             <div class="row mb-4">
                 <div class="col-md-3 mb-3">
@@ -291,6 +300,9 @@
             // Load containers
             loadContainers();
             
+            // Check Docker status
+            checkDockerStatus();
+            
             // Setup form handler
             setupFormHandler();
         });
@@ -308,6 +320,42 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `;
+        }
+
+        async function checkDockerStatus() {
+            try {
+                const response = await fetch('/api/uws-compute/docker-status', {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const statusElement = document.getElementById('docker-status');
+                    
+                    if (data.dockerAvailable) {
+                        statusElement.className = 'alert alert-success';
+                        statusElement.innerHTML = `
+                            <i class="fas fa-check-circle"></i> <strong>Docker Available!</strong> 
+                            Real containers will be created and you can access them via the provided links.
+                        `;
+                    } else {
+                        statusElement.className = 'alert alert-warning';
+                        statusElement.innerHTML = `
+                            <i class="fas fa-exclamation-triangle"></i> <strong>Docker Not Available</strong> 
+                            Running in simulation mode. Containers will be simulated only.
+                        `;
+                    }
+                }
+            } catch (error) {
+                const statusElement = document.getElementById('docker-status');
+                statusElement.className = 'alert alert-warning';
+                statusElement.innerHTML = `
+                    <i class="fas fa-exclamation-triangle"></i> <strong>Docker Status Unknown</strong> 
+                    Running in simulation mode. Containers will be simulated only.
+                `;
+            }
         }
 
         function setupFormHandler() {
@@ -421,6 +469,9 @@
                             <span class="status-badge ${container.status === 'RUNNING' ? 'status-running' : 'status-stopped'}">
                                 ${container.status}
                             </span>
+                            ${container.status === 'RUNNING' && container.port ? 
+                                `<br><small class="text-success"><i class="fas fa-link"></i> <a href="http://localhost:${container.port}" target="_blank">Access Container</a></small>` : ''
+                            }
                         </div>
                         <div class="col-md-2">
                             <small class="text-muted">

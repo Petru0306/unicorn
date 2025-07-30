@@ -47,6 +47,9 @@ public class Container {
     @Column
     private LocalDateTime lastScheduledRun;
 
+    @Column
+    private String dockerContainerId;
+
     // Default constructor
     public Container() {
         this.createdAt = LocalDateTime.now();
@@ -170,5 +173,13 @@ public class Container {
 
     public void setLastScheduledRun(LocalDateTime lastScheduledRun) {
         this.lastScheduledRun = lastScheduledRun;
+    }
+
+    public String getDockerContainerId() {
+        return dockerContainerId;
+    }
+
+    public void setDockerContainerId(String dockerContainerId) {
+        this.dockerContainerId = dockerContainerId;
     }
 } 

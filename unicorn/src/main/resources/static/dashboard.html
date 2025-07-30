@@ -188,6 +188,65 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
+                            <h5>🗄️ UWS-RDB Relational Database Service</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="lead">Create, manage, and query your relational database instances</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Features:</h6>
+                                    <ul>
+                                        <li>Create database instances with custom CPU, RAM, and storage limits</li>
+                                        <li>Execute SQL queries (CREATE, INSERT, SELECT, UPDATE, DELETE)</li>
+                                        <li>Manage multiple tables per database instance</li>
+                                        <li>Secure PostgreSQL-based database service with JWT authentication</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <a href="/uws-rdb.html" class="btn btn-info btn-lg">
+                                        <i class="fas fa-database"></i> Access UWS-RDB
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>📨 UWS-SQS Message Queue Service</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="lead">Create, manage, and monitor your message queues with secure JWT authentication</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Features:</h6>
+                                    <ul>
+                                        <li>Create message queues with custom visibility timeout and retention settings</li>
+                                        <li>Send and receive messages with automatic visibility timeout handling</li>
+                                        <li>Peek at messages without consuming them</li>
+                                        <li>Delete messages after processing with secure user isolation</li>
+                                        <li>Real-time message monitoring and queue statistics</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <a href="/uws-sqs.html" class="btn btn-warning btn-lg">
+                                        <i class="fas fa-envelope-open-text"></i> Access UWS-SQS
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
                             <h5>🔑 JWT Token Information</h5>
                         </div>
                         <div class="card-body">
@@ -236,6 +295,30 @@
                                             <td><code>/api/auth/login</code></td>
                                             <td>POST</td>
                                             <td>User authentication</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/uws-rdb/instances</code></td>
+                                            <td>GET/POST</td>
+                                            <td>Database instances management</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/uws-rdb/instances/{id}/query</code></td>
+                                            <td>POST</td>
+                                            <td>Execute SQL queries</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/uws-sqs/queues</code></td>
+                                            <td>GET/POST</td>
+                                            <td>Queue management</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/uws-sqs/queues/{id}/messages</code></td>
+                                            <td>GET/POST</td>
+                                            <td>Message operations</td>
                                             <td><span class="badge bg-success">Active</span></td>
                                         </tr>
                                         <tr>
