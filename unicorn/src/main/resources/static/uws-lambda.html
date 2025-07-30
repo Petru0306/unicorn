@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UWS-Lambda - Unicorn</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        .main-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+        }
+        .btn-logout {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            border: none;
+            border-radius: 10px;
+            padding: 8px 20px;
+            color: white;
+            font-weight: 600;
+        }
+        .btn-logout:hover {
+            background: linear-gradient(45deg, #ee5a52, #ff6b6b);
+            color: white;
+            transform: translateY(-2px);
+        }
+        .editor-container {
+            height: 400px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .execution-output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success-badge {
+            background: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        .error-badge {
+            background: #dc3545;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        .language-badge {
+            background: #007bff;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        .nav-tabs .nav-link {
+            border: none;
+            border-radius: 10px 10px 0 0;
+            margin-right: 5px;
+            background: #f8f9fa;
+        }
+        .nav-tabs .nav-link.active {
+            background: #007bff;
+            color: white;
+        }
+        
+        /* Modal styles for non-Bootstrap modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1050;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal.show {
+            display: block;
+        }
+        
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1040;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-open {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/dashboard.html">🦄 Unicorn</a>
+            <div class="navbar-nav ms-auto">
+                <a href="/dashboard.html" class="btn btn-outline-primary me-2">Dashboard</a>
+                <button class="btn btn-logout" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="main-card">
+            <div class="text-center mb-4">
+                <h1>🚀 UWS-Lambda Function Service</h1>
+                <p class="lead">Create and execute serverless functions in isolated containers</p>
+            </div>
+
+            <!-- Tabs -->
+            <ul class="nav nav-tabs" id="lambdaTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="create-tab" onclick="switchTab('create')" type="button" role="tab">
+                        ✨ Create Function
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="functions-tab" onclick="switchTab('functions')" type="button" role="tab">
+                        📋 My Functions
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="execute-tab" onclick="switchTab('execute')" type="button" role="tab">
+                        ⚡ Execute
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="lambdaTabsContent">
+                <!-- Create Function Tab -->
+                <div class="tab-pane fade show active" id="create" role="tabpanel">
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Create New Lambda Function</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="createLambdaForm">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="functionName" class="form-label">Function Name</label>
+                                                    <input type="text" class="form-control" id="functionName" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="language" class="form-label">Programming Language</label>
+                                                    <select class="form-select" id="language" required>
+                                                        <option value="">Select language</option>
+                                                        <option value="javascript">JavaScript (Node.js)</option>
+                                                        <option value="python">Python</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="codeEditor" class="form-label">Source Code</label>
+                                            <div id="codeEditor" class="editor-container"></div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="testInput" class="form-label">Test Input (JSON)</label>
+                                            <textarea class="form-control" id="testInput" rows="3" placeholder='{"name": "World", "number": 42}' onblur="validateJSON(this)">{"name": "World", "number": 42}</textarea>
+                                            <small class="form-text text-muted">Enter valid JSON format: {"key": "value", "number": 42}</small>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" class="btn btn-primary">Create Function</button>
+                                            <button type="button" class="btn btn-success" onclick="testFunction()">Test Function</button>
+                                            <button type="button" class="btn btn-info" onclick="testAuth()">Test Auth</button>
+                                            <button type="button" class="btn btn-warning" onclick="switchTab('functions')">Go to My Functions</button>
+                                            <button type="button" class="btn btn-secondary" onclick="switchTab('execute')">Go to Execute</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- My Functions Tab -->
+                <div class="tab-pane fade" id="functions" role="tabpanel">
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5>My Lambda Functions</h5>
+                                    <div>
+                                        <button class="btn btn-primary btn-sm" onclick="loadFunctions()">Refresh</button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="functionsTable"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Execute Tab -->
+                <div class="tab-pane fade" id="execute" role="tabpanel">
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Execute Function</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="executeFunction" class="form-label">Select Function</label>
+                                                <select class="form-select" id="executeFunction">
+                                                    <option value="">Select a function to execute</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="executeInput" class="form-label">Input Data (JSON)</label>
+                                                <textarea class="form-control" id="executeInput" rows="5" placeholder='{"name": "World", "number": 42}' onblur="validateJSON(this)">{"name": "World", "number": 42}</textarea>
+                                                <small class="form-text text-muted">Enter valid JSON format: {"key": "value", "number": 42}</small>
+                                            </div>
+                                            <button class="btn btn-success" onclick="executeSelectedFunction()">Execute Function</button>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Execution Results</h6>
+                                            <div id="executionResults" class="execution-output">No execution results yet.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Execution Logs Modal -->
+    <div class="modal fade" id="logsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Execution Logs</h5>
+                    <button type="button" class="btn-close" onclick="hideLogsModal()"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="logsContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Wait for Bootstrap to load
+        function waitForBootstrap() {
+            if (typeof bootstrap !== 'undefined') {
+                initializeTabs();
+            } else {
+                setTimeout(waitForBootstrap, 100);
+            }
+        }
+        
+        function switchTab(tabName) {
+            console.log('Switching to tab:', tabName)
+            
+            // Hide all tab panes
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('show', 'active')
+            })
+            
+            // Remove active from all tabs
+            document.querySelectorAll('#lambdaTabs button').forEach(btn => {
+                btn.classList.remove('active')
+            })
+            
+            // Show target tab pane
+            const targetPane = document.getElementById(tabName)
+            if (targetPane) {
+                targetPane.classList.add('show', 'active')
+                console.log('Tab pane found and activated:', tabName)
+            } else {
+                console.error('Tab pane not found:', tabName)
+            }
+            
+            // Activate the clicked tab button
+            const targetTab = document.getElementById(tabName + '-tab')
+            if (targetTab) {
+                targetTab.classList.add('active')
+                console.log('Tab button activated:', tabName + '-tab')
+            } else {
+                console.error('Tab button not found:', tabName + '-tab')
+            }
+            
+            // Load functions if switching to functions tab
+            if (tabName === 'functions') {
+                console.log('Loading functions for functions tab...')
+                loadFunctions()
+            }
+        }
+
+        function initializeTabs() {
+            console.log('Initializing tabs...');
+            // Tabs are now handled by the switchTab function
+            console.log('Tab switching ready - use switchTab() function');
+        }
+        let editor;
+        let currentToken;
+
+        // Initialize Monaco Editor
+        require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.45.0/min/vs' } });
+        require(['vs/editor/editor.main'], function () {
+            editor = monaco.editor.create(document.getElementById('codeEditor'), {
+                value: '// Write your function here\n// For JavaScript:\nconsole.log("Hello, World!");\n\n// For Python:\n# print("Hello, World!")',
+                language: 'javascript',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false }
+            });
+        });
+
+        // Check authentication on page load
+        window.addEventListener('load', function() {
+            currentToken = localStorage.getItem('jwtToken');
+            if (!currentToken) {
+                alert('Please login first');
+                window.location.href = '/login.html';
+                return;
+            }
+            loadFunctions();
+            
+            // Test server connectivity and token validity
+            console.log('Testing server connectivity...')
+            console.log('Current token:', currentToken ? 'Present' : 'Missing')
+            
+            // Test if we can access a protected endpoint
+            fetch('/api/lambdas', {
+                headers: {
+                    'Authorization': 'Bearer ' + currentToken
+                }
+            })
+            .then(response => {
+                console.log('Lambda API test - Status:', response.status)
+                if (response.status === 401) {
+                    console.error('Token is invalid or expired')
+                    alert('Your session has expired. Please login again.')
+                    window.location.href = '/login.html'
+                } else if (response.status === 200) {
+                    console.log('Token is valid, API is working')
+                }
+            })
+            .catch(error => {
+                console.error('API test failed:', error)
+            })
+            
+            // Wait for Bootstrap to load and initialize tabs
+            waitForBootstrap();
+        });
+
+        // Create Lambda Function
+        document.getElementById('createLambdaForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('functionName').value;
+            const language = document.getElementById('language').value;
+            const code = editor.getValue();
+
+            if (!name || !language || !code.trim()) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            fetch('/api/lambdas', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + currentToken
+                },
+                body: JSON.stringify({
+                    name: name,
+                    language: language,
+                    code: code
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.id) {
+                    alert('Function created successfully!');
+                    document.getElementById('createLambdaForm').reset();
+                    editor.setValue('// Write your function here\n// For JavaScript:\nconsole.log("Hello, World!");\n\n// For Python:\n# print("Hello, World!")');
+                    loadFunctions();
+                } else {
+                    alert('Error creating function: ' + data);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error creating function');
+            });
+        });
+
+        // Test Function
+        function testFunction() {
+            const language = document.getElementById('language').value;
+            const code = editor.getValue();
+            const input = document.getElementById('testInput').value;
+
+            if (!language || !code.trim()) {
+                alert('Please select a language and write some code');
+                return;
+            }
+
+            // Validate and format input JSON
+            let formattedInput = '{}';
+            if (input.trim()) {
+                try {
+                    // Parse and re-stringify to ensure valid JSON
+                    const parsedInput = JSON.parse(input.trim());
+                    formattedInput = JSON.stringify(parsedInput);
+                    console.log('Formatted input:', formattedInput);
+                } catch (e) {
+                    alert('Invalid JSON input: ' + e.message + '\nPlease enter valid JSON format like: {"name": "Alice", "number": 42}');
+                    return;
+                }
+            }
+
+            // Create a temporary function for testing
+            fetch('/api/lambdas', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + currentToken
+                },
+                body: JSON.stringify({
+                    name: 'test-' + Date.now(),
+                    language: language,
+                    code: code
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.id) {
+                    // Execute the test function
+                    return fetch(`/api/lambdas/${data.id}/execute`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + currentToken
+                        },
+                        body: JSON.stringify({ input: formattedInput })
+                    });
+                } else {
+                    throw new Error('Error creating test function: ' + data);
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                let result = `Execution Results:\n`;
+                result += `Success: ${data.success ? 'Yes' : 'No'}\n`;
+                result += `Execution Time: ${data.executionTime}ms\n\n`;
+                
+                if (data.output) {
+                    result += `Output:\n${data.output}\n\n`;
+                }
+                
+                if (data.error) {
+                    result += `Error:\n${data.error}\n\n`;
+                }
+
+                document.getElementById('executionResults').textContent = result;
+                alert('Test completed! Check the execution results.');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error testing function: ' + error.message);
+            });
+        }
+
+        // Load Functions
+        function loadFunctions() {
+            console.log('Loading functions...')
+            console.log('Using token:', currentToken ? currentToken.substring(0, 20) + '...' : 'No token')
+            
+            // Show loading message
+            document.getElementById('functionsTable').innerHTML = '<p class="text-info">Loading functions...</p>';
+            
+            fetch('/api/lambdas', {
+                headers: {
+                    'Authorization': 'Bearer ' + currentToken
+                }
+            })
+            .then(response => {
+                console.log('Response status:', response.status)
+                console.log('Response headers:', response.headers)
+                
+                if (response.status === 401) {
+                    console.error('Authentication failed - token may be invalid or expired')
+                    alert('Authentication failed. Please login again.')
+                    window.location.href = '/login.html'
+                    return
+                }
+                
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status)
+                }
+                return response.json()
+            })
+            .then(data => {
+                if (data) {
+                    console.log('Functions loaded:', data)
+                    displayFunctions(data);
+                    updateExecuteDropdown(data);
+                    
+                    // Show success message if no functions
+                    if (data.length === 0) {
+                        console.log('No functions found - this is normal for new users')
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading functions:', error);
+                document.getElementById('functionsTable').innerHTML = '<p class="text-danger">Error loading functions: ' + error.message + '</p>';
+            });
+        }
+
+        // Display Functions
+        function displayFunctions(functions) {
+            const container = document.getElementById('functionsTable');
+            
+            if (functions.length === 0) {
+                container.innerHTML = '<p class="text-muted">No functions created yet.</p>';
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Language</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            functions.forEach(func => {
+                const createdAt = new Date(func.createdAt).toLocaleString();
+                html += `
+                    <tr>
+                        <td><strong>${func.name}</strong></td>
+                        <td><span class="language-badge">${func.language}</span></td>
+                        <td>${createdAt}</td>
+                        <td>
+                            <button class="btn btn-sm btn-success" onclick="executeFunction(${func.id})">Execute</button>
+                            <button class="btn btn-sm btn-info" onclick="viewLogs(${func.id})">Logs</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteFunction(${func.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // Update Execute Dropdown
+        function updateExecuteDropdown(functions) {
+            const select = document.getElementById('executeFunction');
+            select.innerHTML = '<option value="">Select a function to execute</option>';
+            
+            functions.forEach(func => {
+                const option = document.createElement('option');
+                option.value = func.id;
+                option.textContent = `${func.name} (${func.language})`;
+                select.appendChild(option);
+            });
+        }
+
+        // Execute Selected Function
+        function executeSelectedFunction() {
+            const functionId = document.getElementById('executeFunction').value;
+            const input = document.getElementById('executeInput').value;
+
+            if (!functionId) {
+                alert('Please select a function to execute');
+                return;
+            }
+
+            executeFunction(functionId, input);
+        }
+
+        // Execute Function
+        function executeFunction(functionId, input = null) {
+            console.log('Executing function:', functionId, 'with input:', input);
+            let inputData = input || document.getElementById('executeInput').value;
+
+            // Validate and format input JSON
+            if (inputData && inputData.trim()) {
+                try {
+                    // Parse and re-stringify to ensure valid JSON
+                    const parsedInput = JSON.parse(inputData.trim());
+                    inputData = JSON.stringify(parsedInput);
+                    console.log('Formatted input data:', inputData);
+                } catch (e) {
+                    alert('Invalid JSON input: ' + e.message + '\nPlease enter valid JSON format like: {"name": "Alice", "number": 42}');
+                    return;
+                }
+            } else {
+                inputData = '{}';
+            }
+
+            fetch(`/api/lambdas/${functionId}/execute`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + currentToken
+                },
+                body: JSON.stringify({ input: inputData })
+            })
+            .then(response => {
+                console.log('Execute response status:', response.status);
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Execute response data:', data);
+                let result = `Execution Results:\n`;
+                result += `Success: ${data.success ? 'Yes' : 'No'}\n`;
+                result += `Execution Time: ${data.executionTime}ms\n`;
+                result += `Timestamp: ${new Date(data.timestamp).toLocaleString()}\n\n`;
+                
+                if (data.output) {
+                    result += `Output:\n${data.output}\n\n`;
+                }
+                
+                if (data.error) {
+                    result += `Error:\n${data.error}\n\n`;
+                }
+
+                document.getElementById('executionResults').textContent = result;
+                
+                if (!input) {
+                    // Switch to execute tab if called from functions table
+                    switchTab('execute');
+                }
+            })
+            .catch(error => {
+                console.error('Error executing function:', error);
+                alert('Error executing function: ' + error.message);
+            });
+        }
+
+        // View Logs
+        function viewLogs(functionId) {
+            console.log('Viewing logs for function:', functionId);
+            fetch(`/api/lambdas/${functionId}/logs`, {
+                headers: {
+                    'Authorization': 'Bearer ' + currentToken
+                }
+            })
+            .then(response => {
+                console.log('Logs response status:', response.status);
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Logs response data:', data);
+                displayLogs(data);
+                showLogsModal();
+            })
+            .catch(error => {
+                console.error('Error loading logs:', error);
+                alert('Error loading logs: ' + error.message);
+            });
+        }
+
+        // Display Logs
+        function displayLogs(logs) {
+            const container = document.getElementById('logsContent');
+            
+            if (logs.length === 0) {
+                container.innerHTML = '<p class="text-muted">No execution logs found.</p>';
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Status</th>
+                                <th>Duration</th>
+                                <th>Input</th>
+                                <th>Output</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            logs.forEach(log => {
+                const timestamp = new Date(log.timestamp).toLocaleString();
+                const status = log.success ? 
+                    '<span class="success-badge">Success</span>' : 
+                    '<span class="error-badge">Failed</span>';
+                
+                html += `
+                    <tr>
+                        <td>${timestamp}</td>
+                        <td>${status}</td>
+                        <td>${log.executionTime}ms</td>
+                        <td><small>${log.input || '{}'}</small></td>
+                        <td>
+                            <small>
+                                ${log.output ? log.output.substring(0, 50) + '...' : ''}
+                                ${log.error ? '<br><span class="text-danger">' + log.error.substring(0, 50) + '...</span>' : ''}
+                            </small>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function showLogsModal() {
+            const modal = document.getElementById('logsModal');
+            modal.style.display = 'block';
+            modal.classList.add('show');
+            document.body.classList.add('modal-open');
+            
+            // Add backdrop
+            const backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            backdrop.id = 'modalBackdrop';
+            document.body.appendChild(backdrop);
+        }
+
+        function hideLogsModal() {
+            const modal = document.getElementById('logsModal');
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            
+            // Remove backdrop
+            const backdrop = document.getElementById('modalBackdrop');
+            if (backdrop) {
+                backdrop.remove();
+            }
+        }
+
+        // Delete Function
+        function deleteFunction(functionId) {
+            console.log('Deleting function:', functionId);
+            if (!confirm('Are you sure you want to delete this function?')) {
+                return;
+            }
+
+            fetch(`/api/lambdas/${functionId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + currentToken
+                }
+            })
+            .then(response => {
+                console.log('Delete response status:', response.status);
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                return response.text();
+            })
+            .then(data => {
+                console.log('Delete response:', data);
+                alert('Function deleted successfully');
+                loadFunctions();
+            })
+            .catch(error => {
+                console.error('Error deleting function:', error);
+                alert('Error deleting function: ' + error.message);
+            });
+        }
+
+        // Language change handler
+        document.getElementById('language').addEventListener('change', function() {
+            const language = this.value;
+            if (editor) {
+                const model = editor.getModel();
+                if (language === 'javascript') {
+                    monaco.editor.setModelLanguage(model, 'javascript');
+                    editor.setValue('// JavaScript function\nconsole.log("Hello, World!");\n\n// Access input data:\nconst input = JSON.parse(process.env.LAMBDA_INPUT || "{}");\nconsole.log("Input:", input);');
+                } else if (language === 'python') {
+                    monaco.editor.setModelLanguage(model, 'python');
+                    editor.setValue('# Python function\nprint("Hello, World!")\n\n# Access input data:\nimport json\nimport sys\nimport ast\nimport os\n\n# Get input from environment variable (more reliable than command line args)\nraw_input = os.environ.get("LAMBDA_INPUT", "{}")\nprint("Raw input from env:", raw_input)\n\ntry:\n    # Try to parse as JSON first\n    input_data = json.loads(raw_input)\n    print("Input (JSON):", input_data)\nexcept json.JSONDecodeError as e:\n    print("JSON decode error:", e)\n    try:\n        # If JSON fails, try to parse as Python literal (handles single quotes)\n        input_data = ast.literal_eval(raw_input)\n        print("Input (Python literal):", input_data)\n    except Exception as e2:\n        # Show raw input for debugging\n        print("Raw input:", raw_input)\n        print("Literal eval error:", e2)\n        print("Error parsing input, using empty dict")\n        input_data = {}\n        print("Using empty input data")');
+                }
+            }
+        });
+
+        function testAuth() {
+            console.log('Testing authentication...')
+            console.log('Token:', currentToken ? currentToken.substring(0, 50) + '...' : 'No token')
+            
+            if (!currentToken) {
+                alert('❌ No JWT token found. Please login first.')
+                window.location.href = '/login.html'
+                return
+            }
+            
+            // Decode token to check expiration
+            try {
+                const payload = JSON.parse(atob(currentToken.split('.')[1]))
+                const expirationTime = payload.exp * 1000
+                const currentTime = Date.now()
+                
+                if (currentTime >= expirationTime) {
+                    alert('❌ Token has expired. Please login again.')
+                    window.location.href = '/login.html'
+                    return
+                }
+                
+                console.log('Token expires at:', new Date(expirationTime).toLocaleString())
+            } catch (e) {
+                console.error('Error decoding token:', e)
+            }
+            
+            fetch('/api/lambdas', {
+                headers: {
+                    'Authorization': 'Bearer ' + currentToken
+                }
+            })
+            .then(response => {
+                console.log('Auth test response:', response.status)
+                if (response.status === 200) {
+                    alert('✅ Authentication successful! API is working.')
+                } else if (response.status === 401) {
+                    alert('❌ Authentication failed. Please login again.')
+                    window.location.href = '/login.html'
+                } else {
+                    alert('⚠️ Unexpected response: ' + response.status)
+                }
+            })
+            .catch(error => {
+                console.error('Auth test error:', error)
+                alert('❌ Authentication test failed: ' + error.message)
+            })
+        }
+
+        function validateJSON(textarea) {
+            const value = textarea.value.trim();
+            if (value === '') return;
+            
+            try {
+                JSON.parse(value);
+                textarea.classList.remove('is-invalid');
+                textarea.classList.add('is-valid');
+            } catch (e) {
+                textarea.classList.remove('is-valid');
+                textarea.classList.add('is-invalid');
+                console.log('Invalid JSON:', e.message);
+            }
+        }
+
+        function setJSONExample(jsonString) {
+            // Find the active input field
+            const testInput = document.getElementById('testInput');
+            const executeInput = document.getElementById('executeInput');
+            
+            if (testInput && testInput.closest('.tab-pane').classList.contains('show')) {
+                testInput.value = jsonString;
+                validateJSON(testInput);
+            } else if (executeInput && executeInput.closest('.tab-pane').classList.contains('show')) {
+                executeInput.value = jsonString;
+                validateJSON(executeInput);
+            }
+        }
+
+        function testButtons() {
+            console.log('Testing button functionality...')
+            alert('Testing button functionality...')
+            
+            // Test if functions are accessible
+            console.log('Functions table element:', document.getElementById('functionsTable'))
+            console.log('Current token:', currentToken ? 'Present' : 'Missing')
+            
+            alert('Button test completed! Check console for details.')
+        }
+
+        function testTabSwitch() {
+            console.log('Testing tab switch...')
+            alert('Testing tab switching functionality...')
+            
+            // Test switching to different tabs
+            switchTab('create')
+            setTimeout(() => {
+                switchTab('execute')
+                setTimeout(() => {
+                    switchTab('functions')
+                    alert('Tab switching test completed! All tabs should work now.')
+                }, 1000)
+            }, 1000)
+            
+            console.log('Tab switch test completed')
+        }
+
+        function logout() {
+            localStorage.removeItem('jwtToken');
+            alert('Logged out successfully!');
+            window.location.href = '/index.html';
+        }
+    </script>
+</body>
+</html> 

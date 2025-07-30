@@ -114,10 +114,11 @@ public class UnicornApplication {
 				.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
 					.requestMatchers("/api/auth/**").permitAll()
-					.requestMatchers("/", "/index.html", "/login.html", "/register.html", "/dashboard.html", "/uws-s3.html", "/uws-compute.html", "/css/**", "/js/**", "/images/**").permitAll()
+					.requestMatchers("/", "/index.html", "/login.html", "/register.html", "/dashboard.html", "/uws-s3.html", "/uws-compute.html", "/uws-lambda.html", "/css/**", "/js/**", "/images/**").permitAll()
 					.requestMatchers("/h2-console/**").permitAll()
 					.requestMatchers("/api/uws-s3/**").authenticated()
 					.requestMatchers("/api/uws-compute/**").authenticated()
+					.requestMatchers("/api/lambdas/**").authenticated()
 					.anyRequest().authenticated()
 				)
 				.headers(headers -> headers.frameOptions().disable()) // For H2 console

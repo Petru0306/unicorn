@@ -158,6 +158,36 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
+                            <h5>🚀 UWS-Lambda Function Service</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="lead">Create and execute serverless functions in isolated containers</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Features:</h6>
+                                    <ul>
+                                        <li>Create JavaScript and Python lambda functions</li>
+                                        <li>Execute code in secure isolated environments</li>
+                                        <li>Monitor execution logs and performance</li>
+                                        <li>Resource limits and timeout protection</li>
+                                        <li>Syntax highlighting with Monaco Editor</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <a href="/uws-lambda.html" class="btn btn-warning btn-lg">
+                                        <i class="fas fa-code"></i> Access UWS-Lambda
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
                             <h5>🔑 JWT Token Information</h5>
                         </div>
                         <div class="card-body">
@@ -212,6 +242,36 @@
                                             <td><code>/h2-console</code></td>
                                             <td>GET</td>
                                             <td>Database console</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/lambdas</code></td>
+                                            <td>POST</td>
+                                            <td>Create lambda function</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/lambdas</code></td>
+                                            <td>GET</td>
+                                            <td>List user lambdas</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/lambdas/{id}/execute</code></td>
+                                            <td>POST</td>
+                                            <td>Execute lambda function</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/lambdas/{id}/logs</code></td>
+                                            <td>GET</td>
+                                            <td>Get execution logs</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/lambdas/{id}</code></td>
+                                            <td>DELETE</td>
+                                            <td>Delete lambda function</td>
                                             <td><span class="badge bg-success">Active</span></td>
                                         </tr>
                                     </tbody>
