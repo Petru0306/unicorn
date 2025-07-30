@@ -32,7 +32,13 @@ build/
 ### VS Code ###
 .vscode/
 
+<<<<<<< HEAD
 ### H2 Database Files ###
 data/*.db
 data/*.trace.db
 data/*.mv.db
+=======
+### H2 Database ###
+*.mv.db
+*.trace.db
+>>>>>>> 7e44b1dc46881d37123fa1e1738b735772c2d7a5
