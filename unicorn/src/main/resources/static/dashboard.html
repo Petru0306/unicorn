@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unicorn - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+        }
+        .welcome-section {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .stats-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        .btn-logout {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            border: none;
+            border-radius: 10px;
+            padding: 8px 20px;
+            color: white;
+            font-weight: 600;
+        }
+        .btn-logout:hover {
+            background: linear-gradient(45deg, #ee5a52, #ff6b6b);
+            color: white;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">🦄 Unicorn</a>
+            <div class="navbar-nav ms-auto">
+                <button class="btn btn-logout" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-card">
+            <div class="welcome-section text-center">
+                <h1>Welcome to Your Dashboard!</h1>
+                <p class="lead mb-0">You are successfully authenticated with JWT</p>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="stats-card text-center">
+                        <h3>🔐</h3>
+                        <h4>Authentication</h4>
+                        <p class="text-success">Active</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="stats-card text-center">
+                        <h3>🛡️</h3>
+                        <h4>Security</h4>
+                        <p class="text-success">Protected</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="stats-card text-center">
+                        <h3>⚡</h3>
+                        <h4>Performance</h4>
+                        <p class="text-success">Optimal</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>☁️ UWS-S3 Cloud Storage</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="lead">Manage your cloud storage buckets and files</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Features:</h6>
+                                    <ul>
+                                        <li>Create and manage storage buckets</li>
+                                        <li>Upload files to buckets</li>
+                                        <li>Download and delete files</li>
+                                        <li>Secure file access with JWT</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <a href="/uws-s3.html" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-cloud"></i> Access UWS-S3
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>⚡ UWS-Compute Container Service</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="lead">Deploy and manage Docker containers in the cloud</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Features:</h6>
+                                    <ul>
+                                        <li>Deploy Docker containers with custom configurations</li>
+                                        <li>Choose from micro, small, and medium instance sizes</li>
+                                        <li>Start, stop, and delete containers</li>
+                                        <li>Schedule container execution with cron expressions</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <a href="/uws-compute.html" class="btn btn-success btn-lg">
+                                        <i class="fas fa-server"></i> Access UWS-Compute
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>🔑 JWT Token Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Token Status:</strong> <span class="badge bg-success">Valid</span></p>
+                                    <p><strong>Token Type:</strong> JWT (JSON Web Token)</p>
+                                    <p><strong>Expiration:</strong> 10 days from login</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Algorithm:</strong> HS512</p>
+                                    <p><strong>Issuer:</strong> Unicorn Auth System</p>
+                                    <p><strong>Subject:</strong> <span id="userEmail">Loading...</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>📋 API Endpoints</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Endpoint</th>
+                                            <th>Method</th>
+                                            <th>Description</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>/api/auth/register</code></td>
+                                            <td>POST</td>
+                                            <td>User registration</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/auth/login</code></td>
+                                            <td>POST</td>
+                                            <td>User authentication</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/h2-console</code></td>
+                                            <td>GET</td>
+                                            <td>Database console</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if user is authenticated
+        window.addEventListener('load', function() {
+            const token = localStorage.getItem('jwtToken');
+            if (!token) {
+                console.log('No JWT token found, redirecting to login');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            console.log('JWT token found, proceeding to dashboard');
+            
+            // Decode JWT token to get user email
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                document.getElementById('userEmail').textContent = payload.sub || 'Unknown';
+                console.log('User email from token:', payload.sub);
+            } catch (error) {
+                console.error('Error decoding token:', error);
+                document.getElementById('userEmail').textContent = 'Error decoding token';
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('jwtToken');
+            alert('Logged out successfully!');
+            window.location.href = '/index.html';
+        }
+
+        // Auto-logout when token expires (check every minute)
+        setInterval(function() {
+            const token = localStorage.getItem('jwtToken');
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const expirationTime = payload.exp * 1000; // Convert to milliseconds
+                    const currentTime = Date.now();
+                    
+                    if (currentTime >= expirationTime) {
+                        alert('Your session has expired. Please login again.');
+                        logout();
+                    }
+                } catch (error) {
+                    console.error('Error checking token expiration:', error);
+                }
+            }
+        }, 60000); // Check every minute
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
