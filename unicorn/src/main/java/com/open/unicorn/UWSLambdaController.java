@@ -3,7 +3,6 @@ package com.open.unicorn;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
