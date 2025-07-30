@@ -33,7 +33,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.annotation.PreDestroy;
 
 @SpringBootApplication
@@ -121,7 +120,7 @@ public class UnicornApplication {
 				.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
 					.requestMatchers("/api/auth/**").permitAll()
-					.requestMatchers("/", "/index.html", "/login.html", "/register.html", "/dashboard.html", "/uws-s3.html", "/uws-compute.html", "/uws-lambda.html", "/uws-rdb.html", "/uws-sqs.html", "/uws-nosql.html", "/uws-secrets.html", "/uws-ai.html", "/uws-dns.html", "/css/**", "/js/**", "/images/**").permitAll()
+					.requestMatchers("/", "/index.html", "/login.html", "/register.html", "/dashboard.html", "/uws-s3.html", "/uws-compute.html", "/uws-lambda.html", "/uws-rdb.html", "/uws-sqs.html", "/uws-nosql.html", "/uws-secrets.html", "/uws-ai.html", "/uws-dns.html", "/uws-monitoring.html", "/css/**", "/js/**", "/images/**").permitAll()
 					.requestMatchers("/h2-console/**").permitAll()
 					.requestMatchers("/api/uws-s3/**").authenticated()
 					.requestMatchers("/api/uws-compute/**").authenticated()
@@ -132,6 +131,7 @@ public class UnicornApplication {
 					.requestMatchers("/api/secrets/**").authenticated()
 					.requestMatchers("/api/ai/**").authenticated()
 					.requestMatchers("/api/dns/**").authenticated()
+					.requestMatchers("/api/monitoring/**").authenticated()
 					.anyRequest().authenticated()
 				)
 				.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())) // For H2 console
@@ -216,7 +216,7 @@ public class UnicornApplication {
 		}
 	}
 
-	private static Key getSigningKey() {
+	public static Key getSigningKey() {
 		// Use a consistent but secure key for HS512 (at least 512 bits = 64 bytes)
 		// This is a base64-encoded key that's long enough for HS512
 		String secretKey = "dG9rZW5fc2VjcmV0X2tleV9mb3JfdW5pY29ybl9hcHBsaWNhdGlvbl90aGF0X2lzX3NlY3VyZV9hbmRfbG9uZ19lbm91Z2hfZm9yX2hzNTEyX2FsZ29yaXRobQ==";

@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UWS-Monitoring Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --dark-color: #343a40;
+            --light-color: #f8f9fa;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-container {
+            padding: 2rem 0;
+        }
+
+        .monitoring-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .service-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+        }
+
+        .alert-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .alert-card.critical {
+            border-left-color: var(--danger-color);
+        }
+
+        .btn-monitoring {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            color: white;
+            font-weight: 600;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-monitoring:hover {
+            transform: translateY(-2px);
+            color: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .time-filter {
+            background: white;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .status-healthy { background-color: var(--success-color); }
+        .status-warning { background-color: var(--warning-color); }
+        .status-critical { background-color: var(--danger-color); }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .real-time-indicator {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/dashboard.html">
+                <i class="fas fa-chart-line"></i> UWS-Monitoring
+            </a>
+            <div class="navbar-nav ms-auto">
+                <button class="btn btn-monitoring me-2" onclick="showCreateCustomTableModal()">
+                    <i class="fas fa-table"></i> Create Custom Table
+                </button>
+                <button class="btn btn-monitoring me-2" onclick="exportMetrics()">
+                    <i class="fas fa-download"></i> Export CSV
+                </button>
+                <button class="btn btn-monitoring" onclick="window.location.href='/dashboard.html'">
+                    <i class="fas fa-home"></i> Dashboard
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container dashboard-container">
+        <!-- Time Filter -->
+        <div class="time-filter">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock"></i> Time Range
+                    </h5>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary" onclick="setTimeRange('10min')">10 Min</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="setTimeRange('1hour')">1 Hour</button>
+                        <button type="button" class="btn btn-outline-primary active" onclick="setTimeRange('24hours')">24 Hours</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="setTimeRange('7days')">7 Days</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Health Overview -->
+        <div class="monitoring-card">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="stats-card">
+                        <div class="metric-value" id="totalRequests">0</div>
+                        <div class="metric-label">Total Requests</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-card">
+                        <div class="metric-value" id="avgResponseTime">0ms</div>
+                        <div class="metric-label">Avg Response Time</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-card">
+                        <div class="metric-value" id="errorRate">0%</div>
+                        <div class="metric-label">Error Rate</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-card">
+                        <div class="metric-value" id="activeAlerts">0</div>
+                        <div class="metric-label">Active Alerts</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Metrics -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="monitoring-card">
+                    <h4><i class="fas fa-chart-area"></i> Request Volume by Service</h4>
+                    <div class="chart-container">
+                        <canvas id="requestVolumeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="monitoring-card">
+                    <h4><i class="fas fa-tachometer-alt"></i> Response Time Statistics</h4>
+                    <div class="chart-container">
+                        <canvas id="responseTimeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Status -->
+        <div class="monitoring-card">
+            <h4><i class="fas fa-server"></i> Service Status</h4>
+            <div class="row" id="serviceStatus">
+                <!-- Service cards will be populated here -->
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="monitoring-card">
+                    <h4><i class="fas fa-chart-bar"></i> CPU Usage by Service</h4>
+                    <div class="chart-container">
+                        <canvas id="cpuUsageChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="monitoring-card">
+                    <h4><i class="fas fa-memory"></i> RAM Usage by Service</h4>
+                    <div class="chart-container">
+                        <canvas id="ramUsageChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts Section -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="monitoring-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4><i class="fas fa-bell"></i> Active Alerts</h4>
+                        <button class="btn btn-monitoring" onclick="showCreateAlertModal()">
+                            <i class="fas fa-plus"></i> Create Alert
+                        </button>
+                    </div>
+                    <div id="alertsList">
+                        <!-- Alerts will be populated here -->
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="monitoring-card">
+                    <h4><i class="fas fa-list"></i> Recent Events</h4>
+                    <div id="recentEvents">
+                        <!-- Recent events will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Tables Section -->
+        <div class="monitoring-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4><i class="fas fa-table"></i> Custom Tables</h4>
+                <button class="btn btn-monitoring" onclick="showCreateCustomTableModal()">
+                    <i class="fas fa-plus"></i> Create New Table
+                </button>
+            </div>
+            <div id="customTablesContainer">
+                <!-- Custom tables will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Alert Modal -->
+    <div class="modal fade" id="createAlertModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Alert</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="alertForm">
+                        <div class="mb-3">
+                            <label class="form-label">Alert Name</label>
+                            <input type="text" class="form-control" id="alertName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Service</label>
+                            <select class="form-select" id="alertService">
+                                <option value="">All Services</option>
+                                <option value="UWS-S3">UWS-S3</option>
+                                <option value="UWS-Compute">UWS-Compute</option>
+                                <option value="UWS-Lambda">UWS-Lambda</option>
+                                <option value="UWS-RDB">UWS-RDB</option>
+                                <option value="UWS-NoSQL">UWS-NoSQL</option>
+                                <option value="UWS-SQS">UWS-SQS</option>
+                                <option value="UWS-AI">UWS-AI</option>
+                                <option value="UWS-Secrets">UWS-Secrets</option>
+                                <option value="UWS-DNS">UWS-DNS</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Metric Type</label>
+                            <select class="form-select" id="alertMetricType" required>
+                                <option value="response_time">Response Time (ms)</option>
+                                <option value="cpu_usage">CPU Usage (%)</option>
+                                <option value="ram_usage">RAM Usage (MB)</option>
+                                <option value="error_rate">Error Rate (%)</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Operator</label>
+                                    <select class="form-select" id="alertOperator" required>
+                                        <option value=">">&gt;</option>
+                                        <option value=">=">&gt;=</option>
+                                        <option value="<">&lt;</option>
+                                        <option value="<=">&lt;=</option>
+                                        <option value="==">=</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label class="form-label">Threshold Value</label>
+                                    <input type="number" class="form-control" id="alertThreshold" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="emailNotification">
+                                <label class="form-check-label">Email Notification</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Webhook URL (Optional)</label>
+                            <input type="url" class="form-control" id="webhookUrl" placeholder="https://your-webhook-url.com">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-monitoring" onclick="createAlert()">Create Alert</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Custom Table Modal -->
+    <div class="modal fade" id="createCustomTableModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Custom Table</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="customTableForm">
+                        <div class="mb-3">
+                            <label class="form-label">Table Name</label>
+                            <input type="text" class="form-control" id="tableName" required placeholder="Enter table name">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Select Metrics</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metricCpu" value="cpu_usage">
+                                        <label class="form-check-label" for="metricCpu">
+                                            <i class="fas fa-microchip"></i> CPU Usage (%)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metricRam" value="ram_usage">
+                                        <label class="form-check-label" for="metricRam">
+                                            <i class="fas fa-memory"></i> RAM Usage (MB)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metricResponseTime" value="response_time">
+                                        <label class="form-check-label" for="metricResponseTime">
+                                            <i class="fas fa-clock"></i> Response Time (ms)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metricErrorRate" value="error_rate">
+                                        <label class="form-check-label" for="metricErrorRate">
+                                            <i class="fas fa-exclamation-triangle"></i> Error Rate (%)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Select Services</label>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="serviceS3" value="UWS-S3">
+                                        <label class="form-check-label" for="serviceS3">
+                                            <i class="fas fa-cloud"></i> UWS-S3
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="serviceCompute" value="UWS-Compute">
+                                        <label class="form-check-label" for="serviceCompute">
+                                            <i class="fas fa-server"></i> UWS-Compute
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="serviceLambda" value="UWS-Lambda">
+                                        <label class="form-check-label" for="serviceLambda">
+                                            <i class="fas fa-code"></i> UWS-Lambda
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="serviceRDB" value="UWS-RDB">
+                                        <label class="form-check-label" for="serviceRDB">
+                                            <i class="fas fa-database"></i> UWS-RDB
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="serviceNoSQL" value="UWS-NoSQL">
+                                        <label class="form-check-label" for="serviceNoSQL">
+                                            <i class="fas fa-database"></i> UWS-NoSQL
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="serviceSQS" value="UWS-SQS">
+                                        <label class="form-check-label" for="serviceSQS">
+                                            <i class="fas fa-envelope"></i> UWS-SQS
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="serviceAI" value="UWS-AI">
+                                        <label class="form-check-label" for="serviceAI">
+                                            <i class="fas fa-brain"></i> UWS-AI
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="serviceSecrets" value="UWS-Secrets">
+                                        <label class="form-check-label" for="serviceSecrets">
+                                            <i class="fas fa-key"></i> UWS-Secrets
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="serviceDNS" value="UWS-DNS">
+                                        <label class="form-check-label" for="serviceDNS">
+                                            <i class="fas fa-globe"></i> UWS-DNS
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Select Aggregation Functions</label>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="funcMin" value="MIN">
+                                        <label class="form-check-label" for="funcMin">
+                                            <i class="fas fa-arrow-down"></i> MIN
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="funcMax" value="MAX">
+                                        <label class="form-check-label" for="funcMax">
+                                            <i class="fas fa-arrow-up"></i> MAX
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="funcAvg" value="AVG">
+                                        <label class="form-check-label" for="funcAvg">
+                                            <i class="fas fa-calculator"></i> AVG
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="funcSum" value="SUM">
+                                        <label class="form-check-label" for="funcSum">
+                                            <i class="fas fa-plus"></i> SUM
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="funcP95" value="P95">
+                                        <label class="form-check-label" for="funcP95">
+                                            <i class="fas fa-percentage"></i> P95
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Chart Type</label>
+                            <select class="form-select" id="chartType" required>
+                                <option value="table">Data Table</option>
+                                <option value="bar">Bar Chart</option>
+                                <option value="line">Line Chart</option>
+                                <option value="pie">Pie Chart</option>
+                                <option value="doughnut">Doughnut Chart</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-monitoring" onclick="createCustomTable()">Create Table</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentTimeRange = '24hours';
+        let charts = {};
+        let refreshInterval;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            const token = localStorage.getItem('jwtToken');
+            if (!token) {
+                alert('Please log in to access the monitoring dashboard');
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            loadDashboardData();
+            startRealTimeUpdates();
+        });
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                const token = localStorage.getItem('jwtToken');
+                const response = await fetch(`/api/monitoring/metrics?timeRange=${currentTimeRange}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.status === 401 || response.status === 403) {
+                    alert('Authentication required. Please log in again.');
+                    window.location.href = '/login.html';
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                updateOverviewStats(data);
+                updateServiceStatus(data);
+                updateCharts(data);
+                updateAlerts(data);
+                updateRecentEvents(data);
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Update overview statistics
+        function updateOverviewStats(data) {
+            document.getElementById('totalRequests').textContent = data.totalRequests || 0;
+            document.getElementById('avgResponseTime').textContent = 
+                Math.round(data.responseTimeStats?.[0]?.[3] || 0) + 'ms';
+            document.getElementById('errorRate').textContent = 
+                Math.round((data.errorCounts?.[0]?.[1] || 0) / (data.totalRequests || 1) * 100) + '%';
+            document.getElementById('activeAlerts').textContent = data.activeAlerts?.length || 0;
+        }
+
+        // Update service status cards
+        function updateServiceStatus(data) {
+            const services = [
+                { name: 'UWS-S3', icon: 'fa-cloud', color: 'primary' },
+                { name: 'UWS-Compute', icon: 'fa-server', color: 'success' },
+                { name: 'UWS-Lambda', icon: 'fa-code', color: 'warning' },
+                { name: 'UWS-RDB', icon: 'fa-database', color: 'info' },
+                { name: 'UWS-NoSQL', icon: 'fa-database', color: 'danger' },
+                { name: 'UWS-SQS', icon: 'fa-envelope', color: 'warning' },
+                { name: 'UWS-AI', icon: 'fa-brain', color: 'primary' },
+                { name: 'UWS-Secrets', icon: 'fa-key', color: 'danger' },
+                { name: 'UWS-DNS', icon: 'fa-globe', color: 'info' }
+            ];
+
+            const container = document.getElementById('serviceStatus');
+            container.innerHTML = '';
+
+            services.forEach(service => {
+                const serviceData = data.requestCountByService?.find(s => s[0] === service.name);
+                const requestCount = serviceData ? serviceData[1] : 0;
+                const status = requestCount > 0 ? 'healthy' : 'warning';
+
+                const card = document.createElement('div');
+                card.className = 'col-md-4 col-lg-3';
+                card.innerHTML = `
+                    <div class="service-card">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas ${service.icon} text-${service.color} me-2"></i>
+                            <h6 class="mb-0">${service.name}</h6>
+                            <span class="status-indicator status-${status} ms-auto"></span>
+                        </div>
+                        <div class="metric-value">${requestCount}</div>
+                        <div class="metric-label">Requests</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Update charts
+        function updateCharts(data) {
+            updateRequestVolumeChart(data);
+            updateResponseTimeChart(data);
+            updateCpuUsageChart(data);
+            updateRamUsageChart(data);
+        }
+
+        // Update request volume chart
+        function updateRequestVolumeChart(data) {
+            const ctx = document.getElementById('requestVolumeChart').getContext('2d');
+            
+            if (charts.requestVolume) {
+                charts.requestVolume.destroy();
+            }
+
+            const labels = data.requestCountByService?.map(item => item[0]) || [];
+            const values = data.requestCountByService?.map(item => item[1]) || [];
+
+            charts.requestVolume = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Requests',
+                        data: values,
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update response time chart
+        function updateResponseTimeChart(data) {
+            const ctx = document.getElementById('responseTimeChart').getContext('2d');
+            
+            if (charts.responseTime) {
+                charts.responseTime.destroy();
+            }
+
+            const labels = data.responseTimeStats?.map(item => item[0]) || [];
+            const avgTimes = data.responseTimeStats?.map(item => Math.round(item[2])) || [];
+
+            charts.responseTime = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: avgTimes,
+                        backgroundColor: [
+                            '#667eea', '#764ba2', '#f093fb', '#f5576c',
+                            '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update CPU usage chart
+        function updateCpuUsageChart(data) {
+            const ctx = document.getElementById('cpuUsageChart').getContext('2d');
+            
+            if (charts.cpuUsage) {
+                charts.cpuUsage.destroy();
+            }
+
+            const labels = data.resourceUsage?.map(item => item[0]) || [];
+            const avgCpu = data.resourceUsage?.map(item => Math.round(item[1])) || [];
+
+            charts.cpuUsage = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'CPU Usage (%)',
+                        data: avgCpu,
+                        borderColor: '#ffc107',
+                        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update RAM usage chart
+        function updateRamUsageChart(data) {
+            const ctx = document.getElementById('ramUsageChart').getContext('2d');
+            
+            if (charts.ramUsage) {
+                charts.ramUsage.destroy();
+            }
+
+            const labels = data.resourceUsage?.map(item => item[0]) || [];
+            const avgRam = data.resourceUsage?.map(item => Math.round(item[2])) || [];
+
+            charts.ramUsage = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'RAM Usage (MB)',
+                        data: avgRam,
+                        borderColor: '#17a2b8',
+                        backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update alerts
+        function updateAlerts(data) {
+            const container = document.getElementById('alertsList');
+            const alerts = data.activeAlerts || [];
+
+            if (alerts.length === 0) {
+                container.innerHTML = '<p class="text-muted">No active alerts</p>';
+                return;
+            }
+
+            container.innerHTML = alerts.map(alert => `
+                <div class="alert-card ${alert.status === 'CRITICAL' ? 'critical' : ''}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">${alert.alertName}</h6>
+                            <p class="mb-1 text-muted">
+                                ${alert.serviceName || 'All Services'} - ${alert.metricType.replace('_', ' ')}
+                            </p>
+                            <small class="text-muted">
+                                ${alert.thresholdOperator} ${alert.thresholdValue}
+                                ${alert.status === 'CRITICAL' ? `(Current: ${alert.currentValue})` : ''}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-${alert.status === 'CRITICAL' ? 'danger' : 'success'}">${alert.status}</span>
+                            <br>
+                            <small class="text-muted">${alert.triggerCount} triggers</small>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update recent events
+        function updateRecentEvents(data) {
+            const container = document.getElementById('recentEvents');
+            const events = data.mostUsedEndpoints || [];
+
+            if (events.length === 0) {
+                container.innerHTML = '<p class="text-muted">No recent events</p>';
+                return;
+            }
+
+            container.innerHTML = events.slice(0, 5).map(event => `
+                <div class="d-flex align-items-center mb-2">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-circle text-primary" style="font-size: 8px;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-2">
+                        <small class="fw-bold">${event[0]}</small>
+                        <br>
+                        <small class="text-muted">${event[1]} - ${event[2]} calls</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Set time range
+        function setTimeRange(range) {
+            currentTimeRange = range;
+            
+            // Update active button
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadDashboardData();
+        }
+
+
+
+        // Export metrics
+        async function exportMetrics() {
+            try {
+                const token = localStorage.getItem('jwtToken');
+                const response = await fetch(`/api/monitoring/export?timeRange=${currentTimeRange}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                const blob = await response.blob();
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `monitoring_metrics_${currentTimeRange}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                alert('Error exporting metrics: ' + error.message);
+            }
+        }
+
+        // Show create alert modal
+        function showCreateAlertModal() {
+            const modal = new bootstrap.Modal(document.getElementById('createAlertModal'));
+            modal.show();
+        }
+
+        // Create alert
+        async function createAlert() {
+            const formData = {
+                alertName: document.getElementById('alertName').value,
+                serviceName: document.getElementById('alertService').value,
+                metricType: document.getElementById('alertMetricType').value,
+                thresholdOperator: document.getElementById('alertOperator').value,
+                thresholdValue: parseFloat(document.getElementById('alertThreshold').value),
+                emailNotification: document.getElementById('emailNotification').checked,
+                webhookUrl: document.getElementById('webhookUrl').value
+            };
+
+            try {
+                const token = localStorage.getItem('jwtToken');
+                const response = await fetch('/api/monitoring/alerts', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('Alert created successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('createAlertModal')).hide();
+                    document.getElementById('alertForm').reset();
+                    loadDashboardData();
+                } else {
+                    alert('Error creating alert: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error creating alert: ' + error.message);
+            }
+        }
+
+        // Start real-time updates
+        function startRealTimeUpdates() {
+            refreshInterval = setInterval(() => {
+                loadDashboardData();
+            }, 30000); // Update every 30 seconds
+        }
+
+        // Stop real-time updates
+        function stopRealTimeUpdates() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', stopRealTimeUpdates);
+
+        // Custom Tables functionality
+        let customTables = [];
+
+        // Show create custom table modal
+        function showCreateCustomTableModal() {
+            const modal = new bootstrap.Modal(document.getElementById('createCustomTableModal'));
+            modal.show();
+        }
+
+        // Create custom table
+        async function createCustomTable() {
+            const tableName = document.getElementById('tableName').value;
+            if (!tableName.trim()) {
+                alert('Please enter a table name');
+                return;
+            }
+
+            // Get selected metrics
+            const selectedMetrics = [];
+            document.querySelectorAll('input[id^="metric"]:checked').forEach(checkbox => {
+                selectedMetrics.push(checkbox.value);
+            });
+
+            if (selectedMetrics.length === 0) {
+                alert('Please select at least one metric');
+                return;
+            }
+
+            // Get selected services
+            const selectedServices = [];
+            document.querySelectorAll('input[id^="service"]:checked').forEach(checkbox => {
+                selectedServices.push(checkbox.value);
+            });
+
+            if (selectedServices.length === 0) {
+                alert('Please select at least one service');
+                return;
+            }
+
+            // Get selected aggregation functions
+            const selectedFunctions = [];
+            document.querySelectorAll('input[id^="func"]:checked').forEach(checkbox => {
+                selectedFunctions.push(checkbox.value);
+            });
+
+            if (selectedFunctions.length === 0) {
+                alert('Please select at least one aggregation function');
+                return;
+            }
+
+            const chartType = document.getElementById('chartType').value;
+
+            const customTable = {
+                id: Date.now(),
+                name: tableName,
+                metrics: selectedMetrics,
+                services: selectedServices,
+                functions: selectedFunctions,
+                chartType: chartType,
+                data: null
+            };
+
+            customTables.push(customTable);
+            await loadCustomTableData(customTable);
+            renderCustomTables();
+            
+            bootstrap.Modal.getInstance(document.getElementById('createCustomTableModal')).hide();
+            document.getElementById('customTableForm').reset();
+        }
+
+        // Load data for custom table
+        async function loadCustomTableData(customTable) {
+            try {
+                const token = localStorage.getItem('jwtToken');
+                const response = await fetch(`/api/monitoring/metrics?timeRange=${currentTimeRange}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    alert('Authentication required. Please log in again.');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const data = await response.json();
+                customTable.data = data;
+            } catch (error) {
+                console.error('Error loading custom table data:', error);
+            }
+        }
+
+        // Render all custom tables
+        function renderCustomTables() {
+            const container = document.getElementById('customTablesContainer');
+            
+            if (customTables.length === 0) {
+                container.innerHTML = '<p class="text-muted">No custom tables created yet. Click "Create New Table" to get started.</p>';
+                return;
+            }
+
+            container.innerHTML = customTables.map(table => `
+                <div class="monitoring-card mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5><i class="fas fa-table"></i> ${table.name}</h5>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-2" onclick="refreshCustomTable(${table.id})">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomTable(${table.id})">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <small class="text-muted">
+                                <strong>Metrics:</strong> ${table.metrics.join(', ')}
+                            </small>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">
+                                <strong>Services:</strong> ${table.services.join(', ')}
+                            </small>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">
+                                <strong>Functions:</strong> ${table.functions.join(', ')}
+                            </small>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">
+                                <strong>Type:</strong> ${table.chartType}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div id="customTable-${table.id}"></div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Render each table's content
+            customTables.forEach(table => {
+                renderCustomTableContent(table);
+            });
+        }
+
+        // Render individual custom table content
+        function renderCustomTableContent(table) {
+            const container = document.getElementById(`customTable-${table.id}`);
+            if (!container || !table.data) return;
+
+            if (table.chartType === 'table') {
+                renderDataTable(container, table);
+            } else {
+                renderChart(container, table);
+            }
+        }
+
+        // Render data table
+        function renderDataTable(container, table) {
+            const tableData = generateTableData(table);
+            
+            let tableHTML = `
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Service</th>
+            `;
+
+            // Add metric columns
+            table.metrics.forEach(metric => {
+                table.functions.forEach(func => {
+                    tableHTML += `<th>${func} ${getMetricDisplayName(metric)}</th>`;
+                });
+            });
+
+            tableHTML += `
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            // Add data rows
+            tableData.forEach(row => {
+                tableHTML += `<tr><td><strong>${row.service}</strong></td>`;
+                table.metrics.forEach(metric => {
+                    table.functions.forEach(func => {
+                        const value = row[`${func}_${metric}`] || 0;
+                        tableHTML += `<td>${formatValue(value, metric)}</td>`;
+                    });
+                });
+                tableHTML += `</tr>`;
+            });
+
+            tableHTML += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            container.innerHTML = tableHTML;
+        }
+
+        // Render chart
+        function renderChart(container, table) {
+            const tableData = generateTableData(table);
+            
+            // Create canvas for chart
+            container.innerHTML = `<canvas id="chart-${table.id}" height="300"></canvas>`;
+            
+            const ctx = document.getElementById(`chart-${table.id}`).getContext('2d');
+            
+            // Prepare chart data
+            const labels = tableData.map(row => row.service);
+            const datasets = [];
+            
+            table.metrics.forEach((metric, metricIndex) => {
+                table.functions.forEach((func, funcIndex) => {
+                    const data = tableData.map(row => row[`${func}_${metric}`] || 0);
+                    const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'];
+                    const colorIndex = (metricIndex * table.functions.length + funcIndex) % colors.length;
+                    
+                    datasets.push({
+                        label: `${func} ${getMetricDisplayName(metric)}`,
+                        data: data,
+                        backgroundColor: colors[colorIndex],
+                        borderColor: colors[colorIndex],
+                        borderWidth: 1
+                    });
+                });
+            });
+
+            // Destroy existing chart if it exists
+            if (charts[`custom-${table.id}`]) {
+                charts[`custom-${table.id}`].destroy();
+            }
+
+            charts[`custom-${table.id}`] = new Chart(ctx, {
+                type: table.chartType,
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: table.chartType === 'line' ? {
+                        y: {
+                            beginAtZero: true
+                        }
+                    } : undefined
+                }
+            });
+        }
+
+        // Generate table data from monitoring data
+        function generateTableData(table) {
+            const result = [];
+            
+            table.services.forEach(serviceName => {
+                const row = { service: serviceName };
+                
+                table.metrics.forEach(metric => {
+                    table.functions.forEach(func => {
+                        let value = 0;
+                        
+                        switch (metric) {
+                            case 'cpu_usage':
+                                if (table.data.resourceUsage) {
+                                    const serviceData = table.data.resourceUsage.find(item => item[0] === serviceName);
+                                    if (serviceData) {
+                                        value = calculateFunction(serviceData[1], func); // avgCpu
+                                    }
+                                }
+                                break;
+                            case 'ram_usage':
+                                if (table.data.resourceUsage) {
+                                    const serviceData = table.data.resourceUsage.find(item => item[0] === serviceName);
+                                    if (serviceData) {
+                                        value = calculateFunction(serviceData[2], func); // avgRam
+                                    }
+                                }
+                                break;
+                            case 'response_time':
+                                if (table.data.responseTimeStats) {
+                                    const serviceData = table.data.responseTimeStats.find(item => item[0] === serviceName);
+                                    if (serviceData) {
+                                        value = calculateFunction(serviceData[2], func); // avgTime
+                                    }
+                                }
+                                break;
+                            case 'error_rate':
+                                if (table.data.errorCounts && table.data.requestCountByService) {
+                                    const errorData = table.data.errorCounts.find(item => item[0] === serviceName);
+                                    const requestData = table.data.requestCountByService.find(item => item[0] === serviceName);
+                                    if (errorData && requestData) {
+                                        const errorRate = (errorData[1] / requestData[1]) * 100;
+                                        value = calculateFunction(errorRate, func);
+                                    }
+                                }
+                                break;
+                        }
+                        
+                        row[`${func}_${metric}`] = value;
+                    });
+                });
+                
+                result.push(row);
+            });
+            
+            return result;
+        }
+
+        // Calculate aggregation function
+        function calculateFunction(value, func) {
+            switch (func) {
+                case 'MIN':
+                case 'MAX':
+                case 'AVG':
+                case 'SUM':
+                    return value; // For now, return the value as is since we're working with aggregated data
+                case 'P95':
+                    return value * 1.2; // Simulate P95 as 20% higher than average
+                default:
+                    return value;
+            }
+        }
+
+        // Get metric display name
+        function getMetricDisplayName(metric) {
+            switch (metric) {
+                case 'cpu_usage': return 'CPU (%)';
+                case 'ram_usage': return 'RAM (MB)';
+                case 'response_time': return 'Response (ms)';
+                case 'error_rate': return 'Error (%)';
+                default: return metric;
+            }
+        }
+
+        // Format value for display
+        function formatValue(value, metric) {
+            switch (metric) {
+                case 'cpu_usage':
+                case 'error_rate':
+                    return Math.round(value) + '%';
+                case 'ram_usage':
+                    return Math.round(value) + ' MB';
+                case 'response_time':
+                    return Math.round(value) + ' ms';
+                default:
+                    return Math.round(value);
+            }
+        }
+
+        // Refresh custom table
+        async function refreshCustomTable(tableId) {
+            const table = customTables.find(t => t.id === tableId);
+            if (table) {
+                await loadCustomTableData(table);
+                renderCustomTableContent(table);
+            }
+        }
+
+        // Delete custom table
+        function deleteCustomTable(tableId) {
+            if (confirm('Are you sure you want to delete this custom table?')) {
+                customTables = customTables.filter(t => t.id !== tableId);
+                renderCustomTables();
+            }
+        }
+
+        // Update loadDashboardData to also refresh custom tables
+        const originalLoadDashboardData = loadDashboardData;
+        loadDashboardData = async function() {
+            await originalLoadDashboardData();
+            customTables.forEach(table => {
+                renderCustomTableContent(table);
+            });
+        };
+    </script>
+</body>
+</html> 

@@ -13,10 +13,8 @@ import java.nio.file.Paths;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.CompletableFuture;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -43,7 +41,7 @@ public class LambdaService {
     // Performance optimization
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
     private final ConcurrentHashMap<String, String> codeCache = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<Long, Lambda> lambdaCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, CachedLambda> lambdaCache = new ConcurrentHashMap<>();
     
     // Cache configuration
     private static final int MAX_CACHE_SIZE = 1000;
@@ -54,6 +52,25 @@ public class LambdaService {
     private final AtomicInteger successfulExecutions = new AtomicInteger(0);
     private final AtomicInteger failedExecutions = new AtomicInteger(0);
     private final ConcurrentHashMap<String, Integer> userExecutionCounts = new ConcurrentHashMap<>();
+    
+    // Cache entry class with TTL
+    private static class CachedLambda {
+        private final Lambda lambda;
+        private final long timestamp;
+        
+        CachedLambda(Lambda lambda) {
+            this.lambda = lambda;
+            this.timestamp = System.currentTimeMillis();
+        }
+        
+        public Lambda getLambda() {
+            return lambda;
+        }
+        
+        public boolean isExpired() {
+            return System.currentTimeMillis() - timestamp > CACHE_TTL_MS;
+        }
+    }
     
     // Rate limit info class
     private static class RateLimitInfo {
@@ -106,9 +123,9 @@ public class LambdaService {
         User user = userRepository.findByEmail(userEmail);
         
         // Check cache first
-        Lambda cachedLambda = lambdaCache.get(id);
-        if (cachedLambda != null && cachedLambda.getUser().getId().equals(user.getId())) {
-            return Optional.of(cachedLambda);
+        CachedLambda cachedEntry = lambdaCache.get(id);
+        if (cachedEntry != null && !cachedEntry.isExpired() && cachedEntry.getLambda().getUser().getId().equals(user.getId())) {
+            return Optional.of(cachedEntry.getLambda());
         }
         
         Optional<Lambda> lambdaOpt = lambdaRepository.findByUserAndId(user, id);
@@ -116,7 +133,7 @@ public class LambdaService {
         // Cache the result if found
         if (lambdaOpt.isPresent()) {
             Lambda lambda = lambdaOpt.get();
-            lambdaCache.put(id, lambda);
+            lambdaCache.put(id, new CachedLambda(lambda));
             
             // Clean cache if it gets too large
             if (lambdaCache.size() > MAX_CACHE_SIZE) {
@@ -399,9 +416,6 @@ public class LambdaService {
 
     private void applyLinuxResourceLimits(Process process, Integer cpuLimit, Integer memoryLimit) {
         try {
-            // Get the process ID
-            long pid = process.pid();
-            
             // Apply memory limit using cgroups (if available)
             if (memoryLimit != null && memoryLimit > 0) {
                 // Try to set memory limit using cgroups
@@ -416,7 +430,7 @@ public class LambdaService {
                     Files.write(Paths.get(cgroupPath + "/memory.limit_in_bytes"), 
                               String.valueOf(memoryLimit * 1024 * 1024).getBytes());
                     Files.write(Paths.get(cgroupPath + "/tasks"), 
-                              String.valueOf(pid).getBytes());
+                              String.valueOf(process.pid()).getBytes());
                 } catch (Exception e) {
                     System.err.println("Failed to set memory limit via cgroups: " + e.getMessage());
                 }
@@ -438,7 +452,7 @@ public class LambdaService {
                     Files.write(Paths.get(cgroupPath + "/cpu.cfs_period_us"), 
                               "100000".getBytes());
                     Files.write(Paths.get(cgroupPath + "/tasks"), 
-                              String.valueOf(pid).getBytes());
+                              String.valueOf(process.pid()).getBytes());
                 } catch (Exception e) {
                     System.err.println("Failed to set CPU limit via cgroups: " + e.getMessage());
                 }
@@ -790,7 +804,10 @@ public class LambdaService {
      * Cleans the cache to prevent memory issues
      */
     private void cleanCache() {
-        // Remove oldest entries (simple FIFO approach)
+        // Remove expired entries
+        lambdaCache.entrySet().removeIf(entry -> entry.getValue().isExpired());
+        
+        // Remove oldest entries if still too large (simple FIFO approach)
         if (lambdaCache.size() > MAX_CACHE_SIZE / 2) {
             lambdaCache.clear();
         }
