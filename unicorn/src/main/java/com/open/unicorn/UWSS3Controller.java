@@ -2,7 +2,6 @@ package com.open.unicorn;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -11,33 +10,16 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/uws-s3")
 public class UWSS3Controller {
 
     @Autowired
-    private BucketRepository bucketRepository;
-
-    @Autowired
-    private FileMetadataRepository fileMetadataRepository;
-
-    private final Path uploadPath = Paths.get("uploads");
-
-    public UWSS3Controller() {
-        try {
-            Files.createDirectories(uploadPath);
-        } catch (IOException e) {
-            throw new RuntimeException("Could not create upload directory!", e);
-        }
-    }
+    private S3Service s3Service;
 
     // Create bucket
     @PostMapping("/buckets")
@@ -50,23 +32,8 @@ public class UWSS3Controller {
                 return ResponseEntity.badRequest().body(Map.of("error", "Bucket name is required"));
             }
 
-            if (bucketRepository.existsByName(bucketName)) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "Bucket already exists"));
-            }
-
-            Bucket bucket = new Bucket(bucketName, userEmail);
-            bucketRepository.save(bucket);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Bucket created successfully");
-            response.put("bucket", Map.of(
-                "id", bucket.getId(),
-                "name", bucket.getName(),
-                "owner", bucket.getOwnerEmail(),
-                "createdAt", bucket.getCreatedAt()
-            ));
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            Map<String, Object> result = s3Service.createBucket(bucketName, userEmail);
+            return ResponseEntity.status(HttpStatus.CREATED).body(result);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to create bucket: " + e.getMessage()));
@@ -78,23 +45,11 @@ public class UWSS3Controller {
     public ResponseEntity<Map<String, Object>> listBuckets(Authentication authentication) {
         try {
             String userEmail = authentication.getName();
-            List<Bucket> buckets = bucketRepository.findByOwnerEmail(userEmail);
-
-            List<Map<String, Object>> bucketList = buckets.stream()
-                .map(bucket -> {
-                    Map<String, Object> bucketMap = new HashMap<>();
-                    bucketMap.put("id", bucket.getId());
-                    bucketMap.put("name", bucket.getName());
-                    bucketMap.put("owner", bucket.getOwnerEmail());
-                    bucketMap.put("createdAt", bucket.getCreatedAt());
-                    bucketMap.put("updatedAt", bucket.getUpdatedAt());
-                    return bucketMap;
-                })
-                .collect(Collectors.toList());
+            List<Map<String, Object>> buckets = s3Service.listBuckets(userEmail);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("buckets", bucketList);
-            response.put("count", bucketList.size());
+            response.put("buckets", buckets);
+            response.put("count", buckets.size());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -103,66 +58,71 @@ public class UWSS3Controller {
         }
     }
 
+    // Delete bucket
+    @DeleteMapping("/buckets/{bucketName}")
+    public ResponseEntity<Map<String, Object>> deleteBucket(@PathVariable String bucketName, Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            Map<String, Object> result = s3Service.deleteBucket(bucketName, userEmail);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to delete bucket: " + e.getMessage()));
+        }
+    }
+
     // Upload file
     @PostMapping("/buckets/{bucketName}/files")
     public ResponseEntity<Map<String, Object>> uploadFile(
             @PathVariable String bucketName,
             @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "customName", required = false) String customName,
             Authentication authentication) {
         try {
             String userEmail = authentication.getName();
+            Map<String, Object> result = s3Service.uploadFile(bucketName, file, userEmail, customName);
+            return ResponseEntity.status(HttpStatus.CREATED).body(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to upload file: " + e.getMessage()));
+        }
+    }
 
-            // Check if bucket exists and user owns it
-            Bucket bucket = bucketRepository.findByName(bucketName);
-            if (bucket == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Bucket not found"));
+    // Multi-file upload
+    @PostMapping("/buckets/{bucketName}/files/multiple")
+    public ResponseEntity<Map<String, Object>> uploadMultipleFiles(
+            @PathVariable String bucketName,
+            @RequestParam("files") MultipartFile[] files,
+            Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            List<Map<String, Object>> uploadedFiles = new ArrayList<>();
+            List<String> errors = new ArrayList<>();
+
+            for (MultipartFile file : files) {
+                try {
+                    Map<String, Object> result = s3Service.uploadFile(bucketName, file, userEmail);
+                    Object fileObj = result.get("file");
+                    if (fileObj instanceof Map<?, ?>) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> fileMap = (Map<String, Object>) fileObj;
+                        uploadedFiles.add(fileMap);
+                    }
+                } catch (Exception e) {
+                    errors.add(file.getOriginalFilename() + ": " + e.getMessage());
+                }
             }
-
-            if (!bucket.getOwnerEmail().equals(userEmail)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Access denied"));
-            }
-
-            // Generate unique filename
-            String originalFileName = file.getOriginalFilename();
-            String fileExtension = "";
-            if (originalFileName != null && originalFileName.contains(".")) {
-                fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
-            }
-            String fileName = UUID.randomUUID().toString() + fileExtension;
-
-            // Create bucket directory if it doesn't exist
-            Path bucketPath = uploadPath.resolve(bucketName);
-            Files.createDirectories(bucketPath);
-
-            // Save file
-            Path filePath = bucketPath.resolve(fileName);
-            Files.copy(file.getInputStream(), filePath);
-
-            // Save metadata
-            FileMetadata metadata = new FileMetadata(
-                fileName, originalFileName, bucketName, userEmail,
-                filePath.toString(), file.getSize(), file.getContentType()
-            );
-            fileMetadataRepository.save(metadata);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "File uploaded successfully");
-            response.put("file", Map.of(
-                "id", metadata.getId(),
-                "fileName", metadata.getFileName(),
-                "originalFileName", metadata.getOriginalFileName(),
-                "bucketName", metadata.getBucketName(),
-                "fileSize", metadata.getFileSize(),
-                "contentType", metadata.getContentType(),
-                "uploadedAt", metadata.getUploadedAt()
-            ));
+            response.put("uploadedFiles", uploadedFiles);
+            response.put("successCount", uploadedFiles.size());
+            response.put("errorCount", errors.size());
+            response.put("errors", errors);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to upload file: " + e.getMessage()));
+                .body(Map.of("error", "Failed to upload files: " + e.getMessage()));
         }
     }
 
@@ -170,42 +130,19 @@ public class UWSS3Controller {
     @GetMapping("/buckets/{bucketName}/files")
     public ResponseEntity<Map<String, Object>> listFiles(
             @PathVariable String bucketName,
+            @RequestParam(value = "search", required = false) String searchTerm,
+            @RequestParam(value = "type", required = false) String fileType,
             Authentication authentication) {
         try {
             String userEmail = authentication.getName();
-
-            // Check if bucket exists and user owns it
-            Bucket bucket = bucketRepository.findByName(bucketName);
-            if (bucket == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Bucket not found"));
-            }
-
-            if (!bucket.getOwnerEmail().equals(userEmail)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Access denied"));
-            }
-
-            List<FileMetadata> files = fileMetadataRepository.findByBucketNameAndOwnerEmail(bucketName, userEmail);
-
-            List<Map<String, Object>> fileList = files.stream()
-                .map(file -> {
-                    Map<String, Object> fileMap = new HashMap<>();
-                    fileMap.put("id", file.getId());
-                    fileMap.put("fileName", file.getFileName());
-                    fileMap.put("originalFileName", file.getOriginalFileName());
-                    fileMap.put("fileSize", file.getFileSize());
-                    fileMap.put("contentType", file.getContentType());
-                    fileMap.put("uploadedAt", file.getUploadedAt());
-                    fileMap.put("downloadUrl", "/api/uws-s3/buckets/" + bucketName + "/files/" + file.getFileName() + "/download");
-                    return fileMap;
-                })
-                .collect(Collectors.toList());
+            List<Map<String, Object>> files = s3Service.listFiles(bucketName, userEmail, searchTerm, fileType);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("files", fileList);
-            response.put("count", fileList.size());
+            response.put("files", files);
+            response.put("count", files.size());
             response.put("bucketName", bucketName);
+            response.put("searchTerm", searchTerm);
+            response.put("fileType", fileType);
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -222,30 +159,62 @@ public class UWSS3Controller {
             Authentication authentication) {
         try {
             String userEmail = authentication.getName();
+            Resource resource = s3Service.downloadFile(bucketName, fileName, userEmail);
 
-            // Check if file exists and user owns it
-            FileMetadata metadata = fileMetadataRepository.findByFileName(fileName);
-            if (metadata == null || !metadata.getBucketName().equals(bucketName)) {
+            // Get file metadata for headers
+            FileMetadata metadata = s3Service.getFileMetadata(fileName);
+            if (metadata == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
-            if (!metadata.getOwnerEmail().equals(userEmail)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            String encodedFileName = URLEncoder.encode(metadata.getOriginalFileName(), StandardCharsets.UTF_8.toString());
+
+            return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, 
+                    "attachment; filename=\"" + encodedFileName + "\"")
+                .contentType(MediaType.parseMediaType(metadata.getContentType()))
+                .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // File preview
+    @GetMapping("/buckets/{bucketName}/files/{fileName}/preview")
+    public ResponseEntity<Resource> previewFile(
+            @PathVariable String bucketName,
+            @PathVariable String fileName,
+            Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            Resource resource = s3Service.downloadFile(bucketName, fileName, userEmail);
+
+            // Get file metadata for headers
+            FileMetadata metadata = s3Service.getFileMetadata(fileName);
+            if (metadata == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
-            Path filePath = Paths.get(metadata.getFilePath());
-            Resource resource = new UrlResource(filePath.toUri());
-
-            if (resource.exists() && resource.isReadable()) {
-                return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, 
-                        "attachment; filename=\"" + metadata.getOriginalFileName() + "\"")
-                    .contentType(MediaType.parseMediaType(metadata.getContentType()))
-                    .body(resource);
+            // Set appropriate content type for preview
+            MediaType mediaType = MediaType.parseMediaType(metadata.getContentType());
+            
+            // For images, PDFs, and text files, set inline disposition
+            String disposition = "inline";
+            if (metadata.getContentType().startsWith("image/") || 
+                metadata.getContentType().equals("application/pdf") ||
+                metadata.getContentType().startsWith("text/")) {
+                disposition = "inline";
             } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+                disposition = "attachment";
             }
-        } catch (MalformedURLException e) {
+
+            return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition)
+                .contentType(mediaType)
+                .body(resource);
+        } catch (Exception e) {
+            System.err.println("Preview error: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -258,72 +227,106 @@ public class UWSS3Controller {
             Authentication authentication) {
         try {
             String userEmail = authentication.getName();
-
-            // Check if file exists and user owns it
-            FileMetadata metadata = fileMetadataRepository.findByFileName(fileName);
-            if (metadata == null || !metadata.getBucketName().equals(bucketName)) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "File not found"));
-            }
-
-            if (!metadata.getOwnerEmail().equals(userEmail)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Access denied"));
-            }
-
-            // Delete physical file
-            Path filePath = Paths.get(metadata.getFilePath());
-            Files.deleteIfExists(filePath);
-
-            // Delete metadata
-            fileMetadataRepository.delete(metadata);
-
-            return ResponseEntity.ok(Map.of("message", "File deleted successfully"));
+            Map<String, Object> result = s3Service.deleteFile(bucketName, fileName, userEmail);
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to delete file: " + e.getMessage()));
         }
     }
 
-    // Delete bucket
-    @DeleteMapping("/buckets/{bucketName}")
-    public ResponseEntity<Map<String, Object>> deleteBucket(
+    // Get file versions
+    @GetMapping("/buckets/{bucketName}/files/{originalFileName}/versions")
+    public ResponseEntity<Map<String, Object>> getFileVersions(
+            @PathVariable String bucketName,
+            @PathVariable String originalFileName,
+            Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            List<Map<String, Object>> versions = s3Service.getFileVersions(bucketName, originalFileName, userEmail);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("versions", versions);
+            response.put("count", versions.size());
+            response.put("originalFileName", originalFileName);
+            response.put("bucketName", bucketName);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to get file versions: " + e.getMessage()));
+        }
+    }
+
+    // Get user storage info
+    @GetMapping("/storage/info")
+    public ResponseEntity<Map<String, Object>> getUserStorageInfo(Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            Map<String, Object> storageInfo = s3Service.getUserStorageInfo(userEmail);
+            return ResponseEntity.ok(storageInfo);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to get storage info: " + e.getMessage()));
+        }
+    }
+
+    // Get user activity log
+    @GetMapping("/activity/log")
+    public ResponseEntity<Map<String, Object>> getUserActivityLog(
+            @RequestParam(value = "limit", defaultValue = "10") int limit,
+            Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            List<Map<String, Object>> activities = s3Service.getUserActivityLog(userEmail, limit);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("activities", activities);
+            response.put("count", activities.size());
+            response.put("limit", limit);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to get activity log: " + e.getMessage()));
+        }
+    }
+
+    // Search files across all buckets
+    @GetMapping("/search")
+    public ResponseEntity<Map<String, Object>> searchFiles(
+            @RequestParam("query") String query,
+            @RequestParam(value = "type", required = false) String fileType,
+            Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            List<Map<String, Object>> searchResults = s3Service.searchFiles(userEmail, query, fileType);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("results", searchResults);
+            response.put("count", searchResults.size());
+            response.put("query", query);
+            response.put("fileType", fileType);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to search files: " + e.getMessage()));
+        }
+    }
+
+    // Get bucket statistics
+    @GetMapping("/buckets/{bucketName}/stats")
+    public ResponseEntity<Map<String, Object>> getBucketStats(
             @PathVariable String bucketName,
             Authentication authentication) {
         try {
             String userEmail = authentication.getName();
-
-            // Check if bucket exists and user owns it
-            Bucket bucket = bucketRepository.findByName(bucketName);
-            if (bucket == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Bucket not found"));
-            }
-
-            if (!bucket.getOwnerEmail().equals(userEmail)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Access denied"));
-            }
-
-            // Delete all files in bucket
-            List<FileMetadata> files = fileMetadataRepository.findByBucketNameAndOwnerEmail(bucketName, userEmail);
-            for (FileMetadata file : files) {
-                Path filePath = Paths.get(file.getFilePath());
-                Files.deleteIfExists(filePath);
-                fileMetadataRepository.delete(file);
-            }
-
-            // Delete bucket directory
-            Path bucketPath = uploadPath.resolve(bucketName);
-            Files.deleteIfExists(bucketPath);
-
-            // Delete bucket
-            bucketRepository.delete(bucket);
-
-            return ResponseEntity.ok(Map.of("message", "Bucket and all files deleted successfully"));
+            Map<String, Object> stats = s3Service.getBucketStats(bucketName, userEmail);
+            return ResponseEntity.ok(stats);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to delete bucket: " + e.getMessage()));
+                .body(Map.of("error", "Failed to get bucket stats: " + e.getMessage()));
         }
     }
 } 

@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Base64;
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/ai")

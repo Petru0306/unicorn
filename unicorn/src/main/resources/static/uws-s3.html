@@ -3,147 +3,317 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UWS-S3 Cloud Storage</title>
+    <title>UWS-S3 Storage Service - Unicorn</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+        }
+
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .navbar {
-            background: rgba(255, 255, 255, 0.95) !important;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-        }
+
         .main-container {
             background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
             border-radius: 20px;
-            padding: 2rem;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            margin-top: 2rem;
+            margin: 20px auto;
+            padding: 30px;
+            max-width: 1400px; /* Make UI less wide */
         }
-        .bucket-card {
+
+        .header-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .storage-bar {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .progress {
+            height: 12px;
+            border-radius: 6px;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            height: fit-content;
+        }
+
+        .bucket-item {
+            background: white;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .bucket-item:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.2);
+        }
+
+        .bucket-item.active {
+            border-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .upload-zone {
+            border: 3px dashed var(--primary-color);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: rgba(99, 102, 241, 0.05);
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+            position: relative; /* For file input positioning */
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--success-color);
+            background: rgba(16, 185, 129, 0.1);
+            transform: scale(1.02);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .custom-file-input {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .upload-form {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+        }
+
+        .upload-form.show {
+            display: block;
+        }
+
+        .file-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .file-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-bar {
+            background: white;
+            border-radius: 25px;
+            padding: 15px 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .activity-log {
             background: white;
             border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-            margin-bottom: 1rem;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
         }
-        .bucket-card:hover {
-            transform: translateY(-5px);
-        }
-        .file-item {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 1rem;
-            margin-bottom: 0.5rem;
-            border-left: 4px solid #667eea;
-        }
-        .btn-custom {
-            border-radius: 10px;
-            padding: 8px 20px;
+
+        .btn-modern {
+            border-radius: 25px;
+            padding: 10px 25px;
             font-weight: 600;
             transition: all 0.3s ease;
+            border: none;
         }
-        .btn-custom:hover {
+
+        .btn-modern:hover {
             transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
-        .upload-area {
-            border: 2px dashed #667eea;
-            border-radius: 15px;
-            padding: 2rem;
-            text-align: center;
-            background: rgba(102, 126, 234, 0.05);
-            transition: all 0.3s ease;
+
+        .version-badge {
+            background: var(--warning-color);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
         }
-        .upload-area:hover {
-            background: rgba(102, 126, 234, 0.1);
-            border-color: #764ba2;
-        }
-        .upload-area.dragover {
-            background: rgba(102, 126, 234, 0.2);
-            border-color: #764ba2;
-        }
-        .modal-content {
-            border-radius: 15px;
-            border: none;
-        }
-        .alert {
-            border-radius: 10px;
-            border: none;
-        }
-        .progress {
-            border-radius: 10px;
-            height: 8px;
+
+        .latest-badge {
+            background: var(--success-color);
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/dashboard.html">🦄 Unicorn</a>
-            <div class="navbar-nav ms-auto">
-                <a href="/dashboard.html" class="btn btn-outline-primary btn-custom me-2">
-                    <i class="fas fa-home"></i> Dashboard
-                </a>
-                <button class="btn btn-danger btn-custom" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container">
+    <div class="container-fluid">
         <div class="main-container">
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h1 class="text-center mb-3">
-                        <i class="fas fa-cloud"></i> UWS-S3 Cloud Storage
-                    </h1>
-                    <p class="text-center text-muted">Secure cloud storage with JWT authentication</p>
+            <!-- Header Section -->
+            <div class="header-section">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1><i class="fas fa-cloud-upload-alt"></i> UWS-S3 Storage Service</h1>
+                        <p class="mb-0">Secure cloud storage with advanced features</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button class="btn btn-light btn-modern" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Alert Container -->
-            <div id="alert-container"></div>
-
-            <!-- Bucket Management -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5><i class="fas fa-folder"></i> Bucket Management</h5>
-                            <button class="btn btn-primary btn-custom" onclick="showCreateBucketModal()">
-                                <i class="fas fa-plus"></i> Create Bucket
-                            </button>
+                <!-- Storage Usage Bar -->
+                <div class="storage-bar">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="mb-2"><i class="fas fa-hdd"></i> Storage Usage</h5>
+                            <div class="progress">
+                                <div class="progress-bar" id="storageProgress" role="progressbar" style="width: 0%"></div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div id="buckets-container">
-                                <div class="text-center text-muted">
-                                    <i class="fas fa-spinner fa-spin"></i> Loading buckets...
-                                </div>
+                        <div class="col-md-6 text-end">
+                            <div id="storageInfo">
+                                <span id="usedStorage">0</span> / <span id="maxStorage">1 GB</span> used
+                                <br>
+                                <small id="storagePercentage">0%</small>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- File Management -->
             <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5><i class="fas fa-file"></i> File Management</h5>
+                <!-- Sidebar - Buckets -->
+                <div class="col-md-3">
+                    <div class="sidebar">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5><i class="fas fa-folder"></i> Buckets</h5>
+                            <button class="btn btn-primary btn-sm btn-modern" onclick="showCreateBucketModal()">
+                                <i class="fas fa-plus"></i>
+                            </button>
                         </div>
-                        <div class="card-body">
-                            <div id="files-container">
-                                <div class="text-center text-muted">
-                                    Select a bucket to view and manage files
+                        
+                        <div id="bucketsList">
+                            <!-- Buckets will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Activity Log -->
+                    <div class="activity-log mt-4">
+                        <h6><i class="fas fa-history"></i> Recent Activity</h6>
+                        <div id="activityLog">
+                            <!-- Activity items will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content -->
+                <div class="col-md-9">
+                    <!-- Search and Filter Bar -->
+                    <div class="search-bar">
+                        <div class="row align-items-center">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="text" class="form-control" id="searchInput" placeholder="Search files...">
                                 </div>
                             </div>
+                            <div class="col-md-3">
+                                <select class="form-select" id="fileTypeFilter">
+                                    <option value="">All file types</option>
+                                    <option value="image">Images</option>
+                                    <option value="pdf">PDFs</option>
+                                    <option value="text">Text files</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-primary btn-modern" onclick="searchFiles()">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <button class="btn btn-success btn-modern" onclick="showUploadModal()">
+                                    <i class="fas fa-upload"></i> Upload
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload Zone -->
+                    <div class="upload-zone" id="uploadZone">
+                        <div style="font-size: 48px; color: var(--primary-color); margin-bottom: 15px;">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <h4>Drag & Drop Files Here</h4>
+                        <p>or click to select files</p>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="fileInput" multiple class="custom-file-input">
+                            <button class="btn btn-primary btn-modern" onclick="triggerFileInput()">
+                                <i class="fas fa-folder-open"></i> Choose Files
+                            </button>
+                        </div>
+                        
+                        <!-- Upload Form for File Naming -->
+                        <div class="upload-form" id="uploadForm">
+                            <h6><i class="fas fa-edit"></i> Customize File Names</h6>
+                            <div id="fileList">
+                                <!-- File list will be populated here -->
+                            </div>
+                            <div class="mt-3">
+                                <button class="btn btn-success btn-modern" onclick="uploadFilesWithNames()">
+                                    <i class="fas fa-upload"></i> Upload Files
+                                </button>
+                                <button class="btn btn-secondary btn-modern ms-2" onclick="cancelUpload()">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Files List -->
+                    <div id="filesList">
+                        <!-- Files will be loaded here -->
+                    </div>
+
+                    <!-- Loading Spinner -->
+                    <div class="text-center" id="loadingSpinner" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
                         </div>
                     </div>
                 </div>
@@ -155,18 +325,15 @@
     <div class="modal fade" id="createBucketModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Create New Bucket</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-folder-plus"></i> Create New Bucket</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="createBucketForm">
-                        <div class="mb-3">
-                            <label for="bucketName" class="form-label">Bucket Name</label>
-                            <input type="text" class="form-control" id="bucketName" required>
-                            <div class="form-text">Bucket names must be unique and contain only lowercase letters, numbers, and hyphens.</div>
-                        </div>
-                    </form>
+                    <div class="mb-3">
+                        <label for="bucketName" class="form-label">Bucket Name</label>
+                        <input type="text" class="form-control" id="bucketName" placeholder="Enter bucket name">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -176,33 +343,24 @@
         </div>
     </div>
 
-    <!-- Upload File Modal -->
-    <div class="modal fade" id="uploadFileModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+    <!-- File Preview Modal -->
+    <div class="modal fade" id="previewModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Upload File to <span id="uploadBucketName"></span></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="previewModalTitle"><i class="fas fa-eye"></i> File Preview</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="upload-area" id="uploadArea">
-                        <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
-                        <h5>Drag & Drop files here</h5>
-                        <p class="text-muted">or click to select files</p>
-                        <input type="file" id="fileInput" multiple style="display: none;">
-                        <button class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
-                            <i class="fas fa-folder-open"></i> Choose Files
-                        </button>
-                    </div>
-                    <div id="uploadProgress" style="display: none;">
-                        <div class="progress mb-3">
-                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
-                        </div>
-                        <div id="uploadStatus"></div>
+                    <div id="previewContainer" style="max-height: 500px; overflow: auto;">
+                        <!-- File preview will be loaded here -->
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="downloadPreviewBtn">
+                        <i class="fas fa-download"></i> Download
+                    </button>
                 </div>
             </div>
         </div>
@@ -210,232 +368,257 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        let currentToken = localStorage.getItem('jwtToken');
         let currentBucket = null;
-        let createBucketModal, uploadFileModal;
+        let currentFiles = [];
 
-        // Check authentication on page load
-        window.addEventListener('load', function() {
-            const token = localStorage.getItem('jwtToken');
-            if (!token) {
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!currentToken) {
                 window.location.href = '/login.html';
                 return;
             }
             
-            // Initialize modals
-            createBucketModal = new bootstrap.Modal(document.getElementById('createBucketModal'));
-            uploadFileModal = new bootstrap.Modal(document.getElementById('uploadFileModal'));
-            
-            // Load buckets
+            loadStorageInfo();
             loadBuckets();
-            
-            // Setup file upload handlers
-            setupFileUpload();
+            loadActivityLog();
+            setupDragAndDrop();
+            setupFileInput();
         });
 
-        function logout() {
-            localStorage.removeItem('jwtToken');
-            window.location.href = '/index.html';
+        // Authentication check
+        function checkAuth() {
+            if (!currentToken) {
+                alert('❌ No JWT token found. Please login first.');
+                window.location.href = '/login.html';
+                return false;
+            }
+            return true;
         }
 
-        function showAlert(message, type) {
-            const alertContainer = document.getElementById('alert-container');
-            alertContainer.innerHTML = `
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
+        // Load storage information
+        async function loadStorageInfo() {
+            if (!checkAuth()) return;
+
+            try {
+                const response = await fetch('/api/uws-s3/storage/info', {
+                    headers: { 'Authorization': 'Bearer ' + currentToken }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const usedBytes = data.usedStorage;
+                    const maxBytes = data.maxStorage;
+                    const percentage = data.usagePercentage.toFixed(1);
+
+                    // Format storage display to show KB, MB, GB appropriately
+                    const usedFormatted = formatStorageSize(usedBytes);
+                    const maxFormatted = formatStorageSize(maxBytes);
+
+                    document.getElementById('usedStorage').textContent = usedFormatted;
+                    document.getElementById('maxStorage').textContent = maxFormatted;
+                    document.getElementById('storagePercentage').textContent = percentage + '%';
+                    
+                    const progressBar = document.getElementById('storageProgress');
+                    progressBar.style.width = percentage + '%';
+                    
+                    if (percentage > 90) {
+                        progressBar.className = 'progress-bar bg-danger';
+                    } else if (percentage > 70) {
+                        progressBar.className = 'progress-bar bg-warning';
+                    } else {
+                        progressBar.className = 'progress-bar bg-success';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading storage info:', error);
+            }
         }
 
+        // Format storage size to show KB, MB, GB appropriately
+        function formatStorageSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Load buckets
         async function loadBuckets() {
+            if (!checkAuth()) return;
+
             try {
                 const response = await fetch('/api/uws-s3/buckets', {
-                    headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
-                    }
+                    headers: { 'Authorization': 'Bearer ' + currentToken }
                 });
 
                 if (response.ok) {
                     const data = await response.json();
                     displayBuckets(data.buckets);
-                } else {
-                    showAlert('Failed to load buckets', 'danger');
                 }
             } catch (error) {
-                showAlert('Error loading buckets: ' + error.message, 'danger');
+                console.error('Error loading buckets:', error);
             }
         }
 
+        // Display buckets in sidebar
         function displayBuckets(buckets) {
-            const container = document.getElementById('buckets-container');
-            
-            if (buckets.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center text-muted">
-                        <i class="fas fa-folder-open fa-3x mb-3"></i>
-                        <p>No buckets found. Create your first bucket to get started!</p>
+            const bucketsList = document.getElementById('bucketsList');
+            bucketsList.innerHTML = '';
+
+            buckets.forEach(bucket => {
+                const bucketItem = document.createElement('div');
+                bucketItem.className = 'bucket-item';
+                bucketItem.onclick = () => selectBucket(bucket.name);
+                
+                const sizeMB = (bucket.totalSize / (1024 * 1024)).toFixed(1);
+                
+                bucketItem.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${bucket.name}</strong>
+                            <br>
+                            <small class="text-muted">${bucket.fileCount} files • ${sizeMB} MB</small>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
                     </div>
                 `;
-                return;
-            }
-
-            container.innerHTML = buckets.map(bucket => `
-                <div class="bucket-card">
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <h5><i class="fas fa-folder text-warning"></i> ${bucket.name}</h5>
-                            <small class="text-muted">Created: ${new Date(bucket.createdAt).toLocaleDateString()}</small>
-                        </div>
-                        <div class="col-md-6 text-end">
-                            <button class="btn btn-primary btn-custom me-2" onclick="viewBucket('${bucket.name}')">
-                                <i class="fas fa-eye"></i> View Files
-                            </button>
-                            <button class="btn btn-danger btn-custom" onclick="deleteBucket('${bucket.name}')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+                
+                bucketsList.appendChild(bucketItem);
+            });
         }
 
-        function showCreateBucketModal() {
-            document.getElementById('bucketName').value = '';
-            createBucketModal.show();
-        }
-
-        async function createBucket() {
-            const bucketName = document.getElementById('bucketName').value.trim();
-            
-            if (!bucketName) {
-                showAlert('Please enter a bucket name', 'warning');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/uws-s3/buckets', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
-                    },
-                    body: JSON.stringify({ name: bucketName })
-                });
-
-                if (response.ok) {
-                    showAlert('Bucket created successfully!', 'success');
-                    createBucketModal.hide();
-                    loadBuckets();
-                } else {
-                    const error = await response.json();
-                    showAlert(error.error || 'Failed to create bucket', 'danger');
-                }
-            } catch (error) {
-                showAlert('Error creating bucket: ' + error.message, 'danger');
-            }
-        }
-
-        async function deleteBucket(bucketName) {
-            if (!confirm(`Are you sure you want to delete bucket "${bucketName}" and all its files?`)) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/uws-s3/buckets/${bucketName}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
-                    }
-                });
-
-                if (response.ok) {
-                    showAlert('Bucket deleted successfully!', 'success');
-                    loadBuckets();
-                    if (currentBucket === bucketName) {
-                        currentBucket = null;
-                        document.getElementById('files-container').innerHTML = `
-                            <div class="text-center text-muted">
-                                Select a bucket to view and manage files
-                            </div>
-                        `;
-                    }
-                } else {
-                    const error = await response.json();
-                    showAlert(error.error || 'Failed to delete bucket', 'danger');
-                }
-            } catch (error) {
-                showAlert('Error deleting bucket: ' + error.message, 'danger');
-            }
-        }
-
-        async function viewBucket(bucketName) {
+        // Select bucket
+        function selectBucket(bucketName) {
             currentBucket = bucketName;
             
+            // Update active state
+            document.querySelectorAll('.bucket-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            loadFiles(bucketName);
+        }
+
+        // Load files in selected bucket
+        async function loadFiles(bucketName, searchTerm = '', fileType = '') {
+            if (!checkAuth() || !bucketName) return;
+
+            showLoading(true);
+
             try {
-                const response = await fetch(`/api/uws-s3/buckets/${bucketName}/files`, {
-                    headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
-                    }
+                let url = `/api/uws-s3/buckets/${bucketName}/files`;
+                const params = new URLSearchParams();
+                if (searchTerm && searchTerm.trim()) params.append('search', searchTerm.trim());
+                if (fileType && fileType.trim()) params.append('type', fileType.trim());
+                if (params.toString()) url += '?' + params.toString();
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': 'Bearer ' + currentToken }
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    displayFiles(bucketName, data.files);
+                    currentFiles = data.files;
+                    displayFiles(data.files);
+                    
+                    // Update search results info
+                    updateSearchInfo(data.files.length, searchTerm, fileType);
                 } else {
-                    showAlert('Failed to load files', 'danger');
+                    const error = await response.json();
+                    console.error('Error loading files:', error);
+                    alert('Error loading files: ' + error.error);
                 }
             } catch (error) {
-                showAlert('Error loading files: ' + error.message, 'danger');
+                console.error('Error loading files:', error);
+                alert('Error loading files: ' + error.message);
+            } finally {
+                showLoading(false);
             }
         }
 
-        function displayFiles(bucketName, files) {
-            const container = document.getElementById('files-container');
-            
-            let html = `
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6><i class="fas fa-folder-open"></i> Files in ${bucketName}</h6>
-                    <button class="btn btn-primary btn-custom" onclick="showUploadModal('${bucketName}')">
-                        <i class="fas fa-upload"></i> Upload Files
-                    </button>
-                </div>
-            `;
+        // Display files
+        function displayFiles(files) {
+            const filesList = document.getElementById('filesList');
+            filesList.innerHTML = '';
 
             if (files.length === 0) {
-                html += `
-                    <div class="text-center text-muted">
-                        <i class="fas fa-file fa-3x mb-3"></i>
-                        <p>No files in this bucket. Upload some files to get started!</p>
+                filesList.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No files found</h5>
+                        <p class="text-muted">Upload some files to get started</p>
                     </div>
                 `;
-            } else {
-                html += files.map(file => `
-                    <div class="file-item">
-                        <div class="row align-items-center">
-                            <div class="col-md-6">
-                                <h6><i class="fas fa-file"></i> ${file.originalFileName}</h6>
-                                <small class="text-muted">
-                                    Size: ${formatFileSize(file.fileSize)} | 
-                                    Uploaded: ${new Date(file.uploadedAt).toLocaleDateString()}
-                                </small>
+                return;
+            }
+
+            files.forEach(file => {
+                const fileCard = document.createElement('div');
+                fileCard.className = 'file-card';
+                
+                const fileIcon = getFileIcon(file.contentType);
+                const fileSize = formatFileSize(file.fileSize);
+                const versionBadge = file.isLatest ? 'latest-badge' : '';
+                
+                fileCard.innerHTML = `
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="file-icon ${fileIcon.class}" style="width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; margin-right: 15px; background: ${fileIcon.color};">
+                                    <i class="${fileIcon.icon}"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">${file.originalFileName}</h6>
+                                    <small class="text-muted">${fileSize} • ${file.contentType}</small>
+                                    <br>
+                                    <span class="version-badge ${versionBadge}">v${file.version}</span>
+                                </div>
                             </div>
-                            <div class="col-md-6 text-end">
-                                <a href="${file.downloadUrl}" class="btn btn-success btn-custom me-2" 
-                                   onclick="downloadFile('${file.downloadUrl}')">
-                                    <i class="fas fa-download"></i> Download
-                                </a>
-                                <button class="btn btn-danger btn-custom" onclick="deleteFile('${bucketName}', '${file.fileName}')">
-                                    <i class="fas fa-trash"></i> Delete
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar"></i> ${new Date(file.uploadedAt).toLocaleDateString()}
+                            </small>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <div class="btn-group" role="group">
+                                ${file.canPreview ? `
+                                    <button class="btn btn-outline-primary btn-sm" onclick="previewFile('${file.bucketName}', '${file.fileName}', '${file.originalFileName}')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-outline-success btn-sm" onclick="downloadFile('${file.bucketName}', '${file.fileName}', '${file.originalFileName}')">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteFile('${file.bucketName}', '${file.fileName}', '${file.originalFileName}')">
+                                    <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
-                `).join('');
-            }
-
-            container.innerHTML = html;
+                `;
+                
+                filesList.appendChild(fileCard);
+            });
         }
 
+        // Get file icon based on content type
+        function getFileIcon(contentType) {
+            if (contentType.startsWith('image/')) {
+                return { icon: 'fas fa-image', class: 'image-icon', color: '#10b981' };
+            } else if (contentType === 'application/pdf') {
+                return { icon: 'fas fa-file-pdf', class: 'pdf-icon', color: '#ef4444' };
+            } else if (contentType.startsWith('text/')) {
+                return { icon: 'fas fa-file-alt', class: 'text-icon', color: '#3b82f6' };
+            } else {
+                return { icon: 'fas fa-file', class: 'other-icon', color: '#6b7280' };
+            }
+        }
+
+        // Format file size
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -444,141 +627,527 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        function showUploadModal(bucketName) {
-            document.getElementById('uploadBucketName').textContent = bucketName;
-            document.getElementById('uploadArea').style.display = 'block';
-            document.getElementById('uploadProgress').style.display = 'none';
-            uploadFileModal.show();
-        }
+        // Load activity log
+        async function loadActivityLog() {
+            if (!checkAuth()) return;
 
-        function setupFileUpload() {
-            const uploadArea = document.getElementById('uploadArea');
-            const fileInput = document.getElementById('fileInput');
-
-            // Drag and drop handlers
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.classList.add('dragover');
-            });
-
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.classList.remove('dragover');
-            });
-
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('dragover');
-                const files = e.dataTransfer.files;
-                uploadFiles(files);
-            });
-
-            // File input handler
-            fileInput.addEventListener('change', (e) => {
-                uploadFiles(e.target.files);
-            });
-        }
-
-        async function uploadFiles(files) {
-            if (files.length === 0) return;
-
-            const bucketName = currentBucket;
-            const uploadArea = document.getElementById('uploadArea');
-            const uploadProgress = document.getElementById('uploadProgress');
-            const progressBar = uploadProgress.querySelector('.progress-bar');
-            const uploadStatus = document.getElementById('uploadStatus');
-
-            uploadArea.style.display = 'none';
-            uploadProgress.style.display = 'block';
-
-            let uploadedCount = 0;
-            let totalFiles = files.length;
-
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const formData = new FormData();
-                formData.append('file', file);
-
-                try {
-                    uploadStatus.innerHTML = `Uploading ${file.name}...`;
-                    progressBar.style.width = `${((i + 1) / totalFiles) * 100}%`;
-
-                    const response = await fetch(`/api/uws-s3/buckets/${bucketName}/files`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
-                        },
-                        body: formData
-                    });
-
-                    if (response.ok) {
-                        uploadedCount++;
-                        uploadStatus.innerHTML = `Successfully uploaded ${uploadedCount} of ${totalFiles} files`;
-                    } else {
-                        const error = await response.json();
-                        uploadStatus.innerHTML = `Failed to upload ${file.name}: ${error.error}`;
-                    }
-                } catch (error) {
-                    uploadStatus.innerHTML = `Error uploading ${file.name}: ${error.message}`;
-                }
-            }
-
-            setTimeout(() => {
-                uploadFileModal.hide();
-                viewBucket(bucketName);
-                showAlert(`Successfully uploaded ${uploadedCount} files!`, 'success');
-            }, 2000);
-        }
-
-        async function downloadFile(downloadUrl) {
             try {
-                const response = await fetch(downloadUrl, {
-                    headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
-                    }
+                const response = await fetch('/api/uws-s3/activity/log?limit=10', {
+                    headers: { 'Authorization': 'Bearer ' + currentToken }
                 });
 
                 if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = response.headers.get('content-disposition')?.split('filename=')[1]?.replace(/"/g, '') || 'download';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                } else {
-                    showAlert('Failed to download file', 'danger');
+                    const data = await response.json();
+                    displayActivityLog(data.activities);
                 }
             } catch (error) {
-                showAlert('Error downloading file: ' + error.message, 'danger');
+                console.error('Error loading activity log:', error);
             }
         }
 
-        async function deleteFile(bucketName, fileName) {
-            if (!confirm('Are you sure you want to delete this file?')) {
+        // Display activity log
+        function displayActivityLog(activities) {
+            const activityLog = document.getElementById('activityLog');
+            activityLog.innerHTML = '';
+
+            activities.forEach(activity => {
+                const activityItem = document.createElement('div');
+                activityItem.className = 'activity-item';
+                activityItem.style.padding = '10px 0';
+                activityItem.style.borderBottom = '1px solid #e5e7eb';
+                
+                const actionIcon = getActionIcon(activity.action);
+                const timestamp = new Date(activity.timestamp).toLocaleString();
+                
+                activityItem.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="${actionIcon} text-primary me-2"></i>
+                        <div class="flex-grow-1">
+                            <small class="fw-bold">${activity.action}</small>
+                            <br>
+                            <small class="text-muted">${activity.resourceName}</small>
+                            <br>
+                            <small class="text-muted">${timestamp}</small>
+                        </div>
+                    </div>
+                `;
+                
+                activityLog.appendChild(activityItem);
+            });
+        }
+
+        // Get action icon
+        function getActionIcon(action) {
+            switch (action) {
+                case 'UPLOAD': return 'fas fa-upload';
+                case 'DOWNLOAD': return 'fas fa-download';
+                case 'DELETE': return 'fas fa-trash';
+                case 'CREATE_BUCKET': return 'fas fa-folder-plus';
+                case 'DELETE_BUCKET': return 'fas fa-folder-minus';
+                default: return 'fas fa-info-circle';
+            }
+        }
+
+        // Trigger file input
+        function triggerFileInput() {
+            document.getElementById('fileInput').click();
+        }
+
+        // Setup drag and drop
+        function setupDragAndDrop() {
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    showUploadForm(files);
+                }
+            });
+        }
+
+        // Setup file input
+        function setupFileInput() {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    showUploadForm(e.target.files);
+                }
+            });
+        }
+
+        // Show upload form with file naming options
+        function showUploadForm(files) {
+            const uploadForm = document.getElementById('uploadForm');
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+
+            Array.from(files).forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'mb-3 p-3 border rounded';
+                fileItem.innerHTML = `
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <strong>Original: ${file.name}</strong><br>
+                            <small class="text-muted">${formatFileSize(file.size)} • ${file.type || 'Unknown'}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Custom Name (optional):</label>
+                            <input type="text" class="form-control" id="customName_${index}" 
+                                   placeholder="Enter custom name" value="${file.name}">
+                        </div>
+                    </div>
+                `;
+                fileList.appendChild(fileItem);
+            });
+
+            uploadForm.classList.add('show');
+        }
+
+        // Upload files with custom names
+        async function uploadFilesWithNames() {
+            if (!checkAuth() || !currentBucket) {
+                alert('Please select a bucket first');
+                return;
+            }
+
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+            
+            if (files.length === 0) {
+                alert('No files selected for upload.');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const customNameInput = document.getElementById(`customName_${i}`);
+                    const customName = customNameInput ? customNameInput.value.trim() : file.name;
+                    
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('customName', customName);
+
+                    const response = await fetch(`/api/uws-s3/buckets/${currentBucket}/files`, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + currentToken },
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(`Failed to upload ${file.name}: ${error.error}`);
+                    }
+                }
+
+                alert('Files uploaded successfully!');
+                cancelUpload();
+                loadFiles(currentBucket);
+                loadStorageInfo();
+                loadActivityLog();
+            } catch (error) {
+                console.error('Error uploading files:', error);
+                alert('Error uploading files: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Cancel upload
+        function cancelUpload() {
+            const uploadForm = document.getElementById('uploadForm');
+            uploadForm.classList.remove('show');
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileList').innerHTML = '';
+        }
+
+        // Show loading spinner
+        function showLoading(show) {
+            const spinner = document.getElementById('loadingSpinner');
+            const filesList = document.getElementById('filesList');
+            const uploadForm = document.getElementById('uploadForm');
+            
+            if (show) {
+                spinner.style.display = 'block';
+                filesList.style.display = 'none';
+                uploadForm.style.display = 'none'; // Hide upload form when loading
+            } else {
+                spinner.style.display = 'none';
+                filesList.style.display = 'block';
+                uploadForm.style.display = 'block'; // Show upload form when not loading
+            }
+        }
+
+        // Search files
+        function searchFiles() {
+            const searchTerm = document.getElementById('searchInput').value;
+            const fileType = document.getElementById('fileTypeFilter').value;
+            
+            if (currentBucket) {
+                loadFiles(currentBucket, searchTerm, fileType);
+            }
+        }
+
+        // Auto-search when filters change
+        function autoSearch() {
+            const searchTerm = document.getElementById('searchInput').value;
+            const fileType = document.getElementById('fileTypeFilter').value;
+            
+            if (currentBucket) {
+                loadFiles(currentBucket, searchTerm, fileType);
+            }
+        }
+
+        // Create bucket
+        async function createBucket() {
+            if (!checkAuth()) return;
+
+            const bucketName = document.getElementById('bucketName').value.trim();
+            if (!bucketName) {
+                alert('Please enter a bucket name');
                 return;
             }
 
             try {
-                const response = await fetch(`/api/uws-s3/buckets/${bucketName}/files/${fileName}`, {
-                    method: 'DELETE',
+                const response = await fetch('/api/uws-s3/buckets', {
+                    method: 'POST',
                     headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
-                    }
+                        'Authorization': 'Bearer ' + currentToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: bucketName })
                 });
 
                 if (response.ok) {
-                    showAlert('File deleted successfully!', 'success');
-                    viewBucket(bucketName);
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createBucketModal'));
+                    modal.hide();
+                    document.getElementById('bucketName').value = '';
+                    loadBuckets();
+                    loadActivityLog();
                 } else {
                     const error = await response.json();
-                    showAlert(error.error || 'Failed to delete file', 'danger');
+                    alert('Error: ' + error.error);
                 }
             } catch (error) {
-                showAlert('Error deleting file: ' + error.message, 'danger');
+                console.error('Error creating bucket:', error);
+                alert('Error creating bucket');
             }
         }
+
+        // Update search results info
+        function updateSearchInfo(fileCount, searchTerm, fileType) {
+            const searchBar = document.querySelector('.search-bar');
+            let infoText = '';
+            
+            if (searchTerm || fileType) {
+                const filters = [];
+                if (searchTerm) filters.push(`"${searchTerm}"`);
+                if (fileType) filters.push(`${fileType} files`);
+                infoText = `Found ${fileCount} files matching ${filters.join(' and ')}`;
+            } else {
+                infoText = `Showing ${fileCount} files`;
+            }
+            
+            // Add or update search info
+            let searchInfo = searchBar.querySelector('.search-info');
+            if (!searchInfo) {
+                searchInfo = document.createElement('div');
+                searchInfo.className = 'search-info mt-2 text-muted';
+                searchBar.appendChild(searchInfo);
+            }
+            searchInfo.textContent = infoText;
+        }
+
+        // Download file
+        function downloadFile(bucketName, fileName, originalFileName) {
+            console.log('Download called with:', { bucketName, fileName, originalFileName });
+            if (!checkAuth()) return;
+
+            const url = `/api/uws-s3/buckets/${bucketName}/files/${fileName}/download`;
+            console.log('Download URL:', url);
+            
+            fetch(url, {
+                headers: { 'Authorization': 'Bearer ' + currentToken }
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Download failed');
+                }
+                return response.blob();
+            }).then(blob => {
+                // Create download link with proper filename
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                
+                // Use original filename with proper extension
+                link.download = originalFileName;
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                console.log('Download completed successfully');
+            }).catch(error => {
+                console.error('Download error:', error);
+                alert('Error downloading file: ' + error.message);
+            });
+        }
+
+        // Preview file
+        function previewFile(bucketName, fileName, originalFileName) {
+            console.log('Preview called with:', { bucketName, fileName, originalFileName });
+            if (!checkAuth()) return;
+
+            const previewUrl = `/api/uws-s3/buckets/${bucketName}/files/${fileName}/preview`;
+            console.log('Preview URL:', previewUrl);
+            
+            document.getElementById('previewModalTitle').textContent = `Preview: ${originalFileName}`;
+            document.getElementById('downloadPreviewBtn').onclick = () => {
+                downloadFile(bucketName, fileName, originalFileName);
+            };
+            
+            const previewContainer = document.getElementById('previewContainer');
+            previewContainer.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading preview...</span>
+                    </div>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+            modal.show();
+            
+            fetch(previewUrl, {
+                headers: { 'Authorization': 'Bearer ' + currentToken }
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.blob();
+            }).then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const contentType = blob.type;
+                const fileExtension = originalFileName.substring(originalFileName.lastIndexOf('.')).toLowerCase();
+                
+                console.log('Preview - Content-Type:', contentType, 'File extension:', fileExtension);
+                
+                if (contentType.startsWith('image/')) {
+                    previewContainer.innerHTML = `
+                        <div class="text-center">
+                            <img src="${url}" class="img-fluid" alt="Preview" style="max-height: 400px;">
+                            <p class="mt-2 text-muted">${originalFileName}</p>
+                        </div>
+                    `;
+                } else if (contentType === 'application/pdf') {
+                    previewContainer.innerHTML = `
+                        <div class="text-center">
+                            <embed src="${url}" type="application/pdf" width="100%" height="500px">
+                            <p class="mt-2 text-muted">${originalFileName}</p>
+                        </div>
+                    `;
+                } else if (contentType.startsWith('text/')) {
+                    fetch(url).then(response => response.text()).then(text => {
+                        previewContainer.innerHTML = `
+                            <div>
+                                <pre class="p-3 bg-light" style="max-height: 400px; overflow: auto;">${text}</pre>
+                                <p class="mt-2 text-muted">${originalFileName}</p>
+                            </div>
+                        `;
+                    }).catch(error => {
+                        throw new Error('Failed to read text content: ' + error.message);
+                    });
+                } else {
+                    // Try to determine if it's an image by file extension
+                    if (['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'].includes(fileExtension)) {
+                        previewContainer.innerHTML = `
+                            <div class="text-center">
+                                <img src="${url}" class="img-fluid" alt="Preview" style="max-height: 400px;">
+                                <p class="mt-2 text-muted">${originalFileName} (detected by extension)</p>
+                            </div>
+                        `;
+                    } else {
+                        previewContainer.innerHTML = `
+                            <div class="text-center py-4">
+                                <i class="fas fa-file fa-3x text-muted mb-3"></i>
+                                <h5>Preview not available</h5>
+                                <p>This file type cannot be previewed</p>
+                                <p><small class="text-muted">Content-Type: ${contentType}</small></p>
+                                <p><small class="text-muted">File: ${originalFileName}</small></p>
+                                <button class="btn btn-primary" onclick="downloadFile('${bucketName}', '${fileName}', '${originalFileName}')">
+                                    <i class="fas fa-download"></i> Download Instead
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            }).catch(error => {
+                console.error('Preview error:', error);
+                previewContainer.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                        <h5>Error loading preview</h5>
+                        <p>${error.message}</p>
+                        <p><small class="text-muted">File: ${originalFileName}</small></p>
+                        <button class="btn btn-primary" onclick="downloadFile('${bucketName}', '${fileName}', '${originalFileName}')">
+                            <i class="fas fa-download"></i> Download Instead
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        // Delete file
+        async function deleteFile(bucketName, fileName, originalFileName) {
+            console.log('Delete called with:', { bucketName, fileName, originalFileName });
+            if (!checkAuth()) return;
+
+            if (!confirm(`Are you sure you want to delete "${originalFileName}"?`)) {
+                return;
+            }
+
+            try {
+                const url = `/api/uws-s3/buckets/${bucketName}/files/${fileName}`;
+                console.log('Delete URL:', url);
+                
+                const response = await fetch(url, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + currentToken }
+                });
+
+                if (response.ok) {
+                    console.log('File deleted successfully');
+                    loadFiles(currentBucket);
+                    loadStorageInfo();
+                    loadActivityLog();
+                } else {
+                    const error = await response.json();
+                    console.error('Delete error response:', error);
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error deleting file:', error);
+                alert('Error deleting file: ' + error.message);
+            }
+        }
+
+        // Show create bucket modal
+        function showCreateBucketModal() {
+            const modal = new bootstrap.Modal(document.getElementById('createBucketModal'));
+            modal.show();
+        }
+
+        // Show upload modal
+        function showUploadModal() {
+            if (!currentBucket) {
+                alert('Please select a bucket first');
+                return;
+            }
+            
+            // For now, just trigger file input
+            document.getElementById('fileInput').click();
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('jwtToken');
+            window.location.href = '/login.html';
+        }
+
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('input', function() {
+            // Auto-search as user types (with debounce)
+            clearTimeout(window.searchTimeout);
+            window.searchTimeout = setTimeout(() => {
+                autoSearch();
+            }, 300);
+        });
+
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(window.searchTimeout);
+                autoSearch();
+            }
+        });
+
+        document.getElementById('fileTypeFilter').addEventListener('change', function() {
+            autoSearch();
+        });
+
+        // Clear search button
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add clear search button
+            const searchInput = document.getElementById('searchInput');
+            const searchGroup = searchInput.parentElement;
+            
+            const clearButton = document.createElement('button');
+            clearButton.className = 'btn btn-outline-secondary';
+            clearButton.type = 'button';
+            clearButton.innerHTML = '<i class="fas fa-times"></i>';
+            clearButton.onclick = function() {
+                document.getElementById('searchInput').value = '';
+                document.getElementById('fileTypeFilter').value = '';
+                if (currentBucket) {
+                    loadFiles(currentBucket, '', '');
+                }
+            };
+            
+            searchGroup.appendChild(clearButton);
+        });
     </script>
 </body>
 </html> 
