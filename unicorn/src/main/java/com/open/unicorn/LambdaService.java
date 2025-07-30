@@ -476,7 +476,8 @@ public class LambdaService {
     private void applyMacResourceLimits(Process process, Integer cpuLimit, Integer memoryLimit) {
         try {
             // macOS resource limiting using launchctl
-            long pid = process.pid();
+            // Note: Process ID is available but not currently used for resource limiting
+            // long pid = process.pid();
             
             if (memoryLimit != null && memoryLimit > 0) {
                 // Try to set memory limit using launchctl

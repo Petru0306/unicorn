@@ -452,6 +452,38 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
+                            <h5>🛡️ UWS-IAM Identity and Access Management</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="lead">Comprehensive role-based access control system for managing user permissions across all UWS services</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Features:</h6>
+                                    <ul>
+                                        <li>Create and manage custom roles with granular permissions</li>
+                                        <li>Assign users to roles with specific service access</li>
+                                        <li>Read and Write permissions for each service resource</li>
+                                        <li>Search and filter users for role assignment</li>
+                                        <li>Real-time permission validation across all services</li>
+                                        <li>Secure role-based access control (RBAC)</li>
+                                        <li>Comprehensive audit trail for role changes</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <a href="/uws-iam.html" class="btn btn-secondary btn-lg">
+                                        <i class="fas fa-users-cog"></i> Access UWS-IAM
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
                             <h5>🔑 JWT Token Information</h5>
                         </div>
                         <div class="card-body">
@@ -710,6 +742,24 @@
                                             <td><code>/api/dns/records/{id}</code></td>
                                             <td>GET/PUT/DELETE</td>
                                             <td>DNS record management</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/uws-iam/roles</code></td>
+                                            <td>GET/POST</td>
+                                            <td>IAM role management</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/uws-iam/users/{id}/role/{roleId}</code></td>
+                                            <td>POST</td>
+                                            <td>Assign user to role</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/uws-iam/users/search</code></td>
+                                            <td>GET</td>
+                                            <td>Search users for role assignment</td>
                                             <td><span class="badge bg-success">Active</span></td>
                                         </tr>
                                     </tbody>

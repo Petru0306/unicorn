@@ -31,6 +31,12 @@ public interface BillingEventRepository extends JpaRepository<BillingEvent, Long
            "FROM BillingEvent be WHERE be.userId = :userId GROUP BY YEAR(be.eventTimestamp), MONTH(be.eventTimestamp) ORDER BY year DESC, month DESC")
     List<Object[]> getMonthlyBillingSummary(@Param("userId") Long userId);
     
+    // Get monthly billing summary by service for current month
+    @Query("SELECT be.serviceName, SUM(be.totalCost) as totalCost, COUNT(be) as eventCount " +
+           "FROM BillingEvent be WHERE be.userId = :userId AND YEAR(be.eventTimestamp) = :year AND MONTH(be.eventTimestamp) = :month " +
+           "GROUP BY be.serviceName ORDER BY totalCost DESC")
+    List<Object[]> getMonthlyBillingSummaryByService(@Param("userId") Long userId, @Param("year") int year, @Param("month") int month);
+    
     // Get daily billing for current month
     @Query("SELECT DAY(be.eventTimestamp) as day, SUM(be.totalCost) as totalCost, COUNT(be) as eventCount " +
            "FROM BillingEvent be WHERE be.userId = :userId AND YEAR(be.eventTimestamp) = :year AND MONTH(be.eventTimestamp) = :month " +

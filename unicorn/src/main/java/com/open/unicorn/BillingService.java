@@ -146,8 +146,8 @@ public class BillingService {
     public Map<String, Object> getMonthlyBilling(Long userId, int year, int month) {
         Map<String, Object> monthlyData = new HashMap<>();
         
-        // Monthly summary
-        List<Object[]> monthlySummary = billingEventRepository.getMonthlyBillingSummary(userId);
+        // Monthly summary by service for current month
+        List<Object[]> monthlySummary = billingEventRepository.getMonthlyBillingSummaryByService(userId, year, month);
         monthlyData.put("monthlySummary", monthlySummary);
         
         // Daily breakdown for the month

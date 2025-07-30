@@ -35,6 +35,18 @@ public class BillingAspect {
             "@annotation(org.springframework.web.bind.annotation.PatchMapping)")
     public Object recordBillingEvent(ProceedingJoinPoint joinPoint) throws Throwable {
         
+        // Extract request information first to check if we should skip billing
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes != null) {
+            HttpServletRequest request = attributes.getRequest();
+            String uri = request.getRequestURI();
+            
+            // Skip billing for authentication endpoints (login, register, etc.)
+            if (uri.startsWith("/api/auth/")) {
+                return joinPoint.proceed();
+            }
+        }
+        
         String serviceName = "Unknown";
         String resourceType = "api_request";
         String resourceId = "unknown";
@@ -44,7 +56,6 @@ public class BillingAspect {
         
         try {
             // Extract request information
-            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attributes != null) {
                 HttpServletRequest request = attributes.getRequest();
                 

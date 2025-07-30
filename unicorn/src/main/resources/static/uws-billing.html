@@ -489,6 +489,11 @@
             // Update other stats (these would come from monthly data)
             // For now, we'll use the total cost as current month
             document.getElementById('currentMonthCost').textContent = formatCurrency(data.totalCost);
+            
+            // Update cost by service chart
+            if (data.costByService) {
+                updateServiceCostChart(data.costByService);
+            }
         }
 
         // Load monthly billing data
@@ -573,10 +578,15 @@
             const tableBody = document.getElementById('monthlyBillingTable');
             tableBody.innerHTML = '';
 
-            if (data.costByService) {
-                Object.entries(data.costByService).forEach(([service, cost]) => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
+            // Use monthlySummary data if available, otherwise show current month total
+            if (data.monthlySummary && data.monthlySummary.length > 0) {
+                data.monthlySummary.forEach(row => {
+                    const service = row[0];
+                    const cost = row[1];
+                    const eventCount = row[2] || 0;
+                    
+                    const rowElement = document.createElement('tr');
+                    rowElement.innerHTML = `
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="service-icon service-${getServiceClass(service)}">
@@ -586,11 +596,37 @@
                             </div>
                         </td>
                         <td><span class="cost-badge">${formatCurrency(cost)}</span></td>
-                        <td>${getRandomUsage()}</td>
+                        <td>${eventCount} events</td>
                         <td><span class="text-success"><i class="fas fa-arrow-up"></i> +5%</span></td>
                     `;
-                    tableBody.appendChild(row);
+                    tableBody.appendChild(rowElement);
                 });
+            } else if (data.currentMonthTotal) {
+                // Fallback: show current month total
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="service-icon service-overall">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                            All Services
+                        </div>
+                    </td>
+                    <td><span class="cost-badge">${formatCurrency(data.currentMonthTotal)}</span></td>
+                    <td>Current Month</td>
+                    <td><span class="text-success"><i class="fas fa-arrow-up"></i> +5%</span></td>
+                `;
+                tableBody.appendChild(row);
+            } else {
+                // No data available
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="4" class="text-center text-muted">
+                        <i class="fas fa-info-circle"></i> No billing data available for this period
+                    </td>
+                `;
+                tableBody.appendChild(row);
             }
         }
 

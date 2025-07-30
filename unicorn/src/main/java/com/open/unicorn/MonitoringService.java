@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.OperatingSystemMXBean;
@@ -23,7 +22,7 @@ public class MonitoringService {
     private MonitoringAlertRepository monitoringAlertRepository;
     
     // In-memory cache for real-time metrics
-    private final Map<String, Object> realTimeMetrics = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, Object>> realTimeMetrics = new ConcurrentHashMap<>();
     
     // Simulated system metrics
     private final Random random = new Random();
@@ -77,7 +76,7 @@ public class MonitoringService {
                                      Double cpuUsage, Double ramUsage) {
         String key = userId + "_" + serviceName;
         
-        Map<String, Object> serviceMetrics = (Map<String, Object>) realTimeMetrics.get(key);
+        Map<String, Object> serviceMetrics = realTimeMetrics.get(key);
         if (serviceMetrics == null) {
             serviceMetrics = new HashMap<>();
             serviceMetrics.put("lastUpdate", LocalDateTime.now());
@@ -276,7 +275,7 @@ public class MonitoringService {
      */
     public Map<String, Object> getServiceMetrics(Long userId, String serviceName) {
         String key = userId + "_" + serviceName;
-        Map<String, Object> metrics = (Map<String, Object>) realTimeMetrics.get(key);
+        Map<String, Object> metrics = realTimeMetrics.get(key);
         
         if (metrics == null) {
             metrics = new HashMap<>();
@@ -333,7 +332,6 @@ public class MonitoringService {
         servicePatterns.put("UWS-Secrets", new ServicePattern("getSecret", "createSecret", "updateSecret", "deleteSecret", 80, 250));
         servicePatterns.put("UWS-DNS", new ServicePattern("createRecord", "updateRecord", "deleteRecord", "listRecords", 60, 180));
         
-        LocalDateTime now = LocalDateTime.now();
         String[] userAgents = {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
@@ -494,12 +492,6 @@ public class MonitoringService {
         private final String[] endpoints;
         private final int minResponseTime;
         private final int maxResponseTime;
-        
-        public ServicePattern(String... endpoints) {
-            this.endpoints = endpoints;
-            this.minResponseTime = 50;
-            this.maxResponseTime = 500;
-        }
         
         public ServicePattern(String endpoint1, String endpoint2, String endpoint3, String endpoint4, 
                             int minResponseTime, int maxResponseTime) {
