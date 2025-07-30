@@ -135,6 +135,18 @@
                 <a href="/dashboard.html" class="btn btn-outline-primary me-2">
                     <i class="fas fa-home"></i> Dashboard
                 </a>
+                <a href="/uws-s3.html" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-cloud"></i> UWS-S3
+                </a>
+                <a href="/uws-compute.html" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-server"></i> UWS-Compute
+                </a>
+                <a href="/uws-rdb.html" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-database"></i> UWS-RDB
+                </a>
+                <a href="/uws-sqs.html" class="btn btn-outline-primary me-2 active">
+                    <i class="fas fa-envelope-open-text"></i> UWS-SQS
+                </a>
                 <button class="btn btn-danger" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
@@ -226,22 +238,57 @@
                             </form>
                         </div>
 
+                        <!-- Queue Status -->
+                        <div class="queue-detail-card mb-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-chart-bar"></i> Queue Status</h6>
+                                    <div id="queueStatus">
+                                        <p class="text-muted">Select a queue to view its status</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-clock"></i> Visibility Timeout</h6>
+                                    <div id="visibilityInfo">
+                                        <p class="text-muted">Queue timeout information will appear here</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Message Actions -->
                         <div class="queue-detail-card">
                             <div class="row align-items-center">
                                 <div class="col-md-6">
-                                    <h6><i class="fas fa-cogs"></i> Message Actions</h6>
+                                    <h6><i class="fas fa-cogs"></i> Queue Operations</h6>
+                                    <small class="text-muted">Operations on queue: <strong>${currentQueueName}</strong></small>
                                 </div>
                                 <div class="col-md-6 text-end">
-                                    <button class="btn btn-info me-2" onclick="loadMessages(false)">
-                                        <i class="fas fa-eye"></i> Peek Messages
-                                    </button>
-                                    <button class="btn btn-success me-2" onclick="loadMessages(true)">
-                                        <i class="fas fa-download"></i> Receive Messages
-                                    </button>
-                                    <button class="btn btn-warning" onclick="loadMessages()">
-                                        <i class="fas fa-sync-alt"></i> Refresh
-                                    </button>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-info me-2" onclick="loadMessages(false)" title="View messages without removing them from queue">
+                                            <i class="fas fa-eye"></i> Peek Messages
+                                        </button>
+                                        <button class="btn btn-success me-2" onclick="loadMessages(true)" title="Receive messages and make them invisible for 30 seconds">
+                                            <i class="fas fa-download"></i> Receive Messages
+                                        </button>
+                                        <button class="btn btn-warning" onclick="loadMessages()" title="Refresh message list">
+                                            <i class="fas fa-sync-alt"></i> Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Operation Explanation -->
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-info-circle"></i> How Queue Operations Work:</h6>
+                                        <ul class="mb-0">
+                                            <li><strong>Peek Messages:</strong> View messages without removing them from the queue</li>
+                                            <li><strong>Receive Messages:</strong> Get messages and make them invisible for 30 seconds (they will reappear after timeout)</li>
+                                            <li><strong>Delete Message:</strong> Permanently remove a message from the queue</li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -460,7 +507,54 @@
             currentQueueName = queueName;
             document.getElementById('currentQueueName').textContent = queueName;
             document.getElementById('messagesSection').style.display = 'block';
-            loadMessages(false);
+            // Don't automatically load messages - user must click "Peek Messages"
+            // loadMessages(false);
+            
+            // Clear the messages list and show a message to click "Peek Messages"
+            const messagesList = document.getElementById('messagesList');
+            messagesList.innerHTML = '<div class="text-center text-muted"><i class="fas fa-eye fa-3x mb-3"></i><p>Click "Peek Messages" to view messages in this queue.</p></div>';
+            
+            // Update queue status
+            updateQueueStatus(queueId, queueName);
+        }
+
+        async function updateQueueStatus(queueId, queueName) {
+            try {
+                const response = await fetch(`/api/uws-sqs/queues`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const queue = data.queues.find(q => q.id === queueId);
+                    
+                    if (queue) {
+                        const queueStatus = document.getElementById('queueStatus');
+                        const visibilityInfo = document.getElementById('visibilityInfo');
+                        
+                        queueStatus.innerHTML = `
+                            <div class="row">
+                                <div class="col-6">
+                                    <span class="badge bg-success">${queue.visibleMessages} Visible</span>
+                                </div>
+                                <div class="col-6">
+                                    <span class="badge bg-warning">${queue.totalMessages - queue.visibleMessages} Invisible</span>
+                                </div>
+                            </div>
+                            <small class="text-muted">Total: ${queue.totalMessages} messages</small>
+                        `;
+                        
+                        visibilityInfo.innerHTML = `
+                            <div class="alert alert-info">
+                                <strong>${queue.visibilityTimeout} seconds</strong><br>
+                                <small>Messages become invisible for this duration when received</small>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating queue status:', error);
+            }
         }
 
         function hideMessagesSection() {
@@ -487,9 +581,10 @@
                 const data = await response.json();
                 
                 if (response.ok) {
-                    showAlert('Message sent successfully!');
+                    showAlert('Message sent successfully! Click "Peek Messages" to view it.');
                     document.getElementById('messageContent').value = '';
-                    loadMessages(false);
+                    // Don't automatically load messages - user must click "Peek Messages"
+                    // loadMessages(false);
                 } else {
                     showAlert(data.error || 'Failed to send message', 'danger');
                 }
@@ -513,6 +608,26 @@
                 
                 if (response.ok) {
                     displayMessages(data.messages);
+                    
+                    // Update queue status after operation
+                    if (currentQueueId && currentQueueName) {
+                        updateQueueStatus(currentQueueId, currentQueueName);
+                    }
+                    
+                    // Show operation feedback
+                    if (receive) {
+                        if (data.messages.length > 0) {
+                            showAlert(`Received ${data.messages.length} message(s). They are now invisible for 30 seconds.`);
+                        } else {
+                            showAlert('No visible messages to receive. Try again later.');
+                        }
+                    } else {
+                        if (data.messages.length > 0) {
+                            showAlert(`Found ${data.messages.length} visible message(s) in the queue.`);
+                        } else {
+                            showAlert('No visible messages in the queue.');
+                        }
+                    }
                 } else {
                     showAlert(data.error || 'Failed to load messages', 'danger');
                 }
@@ -622,25 +737,35 @@
         }
 
         async function deleteMessage(messageId) {
+            console.log('deleteMessage called with messageId:', messageId);
+            console.log('currentQueueId:', currentQueueId);
+            
             if (!confirm('Are you sure you want to delete this message?')) {
+                console.log('User cancelled delete');
                 return;
             }
 
             try {
+                console.log('Sending DELETE request to:', `/api/uws-sqs/queues/${currentQueueId}/messages/${messageId}`);
+                
                 const response = await fetch(`/api/uws-sqs/queues/${currentQueueId}/messages/${messageId}`, {
                     method: 'DELETE',
                     headers: getAuthHeaders()
                 });
 
+                console.log('Response status:', response.status);
                 const data = await response.json();
+                console.log('Response data:', data);
                 
                 if (response.ok) {
                     showAlert('Message deleted successfully!');
+                    // Refresh the message list to show the updated state
                     loadMessages(false);
                 } else {
                     showAlert(data.error || 'Failed to delete message', 'danger');
                 }
             } catch (error) {
+                console.error('Error in deleteMessage:', error);
                 showAlert('Error deleting message: ' + error.message, 'danger');
             }
         }
@@ -652,11 +777,14 @@
         }
 
         // Auto-refresh messages every 30 seconds when viewing a queue
+        // Disabled to require explicit user action
+        /*
         setInterval(() => {
             if (currentQueueId) {
                 loadMessages(false);
             }
         }, 30000);
+        */
     </script>
 </body>
 </html> 

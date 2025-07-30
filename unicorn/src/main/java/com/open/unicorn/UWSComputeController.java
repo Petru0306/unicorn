@@ -390,4 +390,91 @@ public class UWSComputeController {
                 .body(Map.of("error", "Failed to check Docker status: " + e.getMessage()));
         }
     }
+
+    // Get container logs
+    @GetMapping("/containers/{instanceId}/logs")
+    public ResponseEntity<Map<String, Object>> getContainerLogs(
+            @PathVariable String instanceId,
+            @RequestParam(value = "lines", defaultValue = "50") int lines,
+            Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            Container container = containerRepository.findByInstanceId(instanceId);
+
+            if (container == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Container not found"));
+            }
+
+            if (!container.getOwnerEmail().equals(userEmail)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Access denied"));
+            }
+
+            String logs = "";
+            if (dockerService.isDockerAvailable() && container.getDockerContainerId() != null) {
+                logs = dockerService.getContainerLogs(container.getDockerContainerId(), lines);
+            } else {
+                logs = "Docker not available - logs not accessible in simulation mode";
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("logs", logs);
+            response.put("containerId", instanceId);
+            response.put("lines", lines);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to get container logs: " + e.getMessage()));
+        }
+    }
+
+    // Get container stats
+    @GetMapping("/containers/{instanceId}/stats")
+    public ResponseEntity<Map<String, Object>> getContainerStats(
+            @PathVariable String instanceId,
+            Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            Container container = containerRepository.findByInstanceId(instanceId);
+
+            if (container == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Container not found"));
+            }
+
+            if (!container.getOwnerEmail().equals(userEmail)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Access denied"));
+            }
+
+            Map<String, Object> stats = new HashMap<>();
+            if (dockerService.isDockerAvailable() && container.getDockerContainerId() != null) {
+                System.out.println("Getting stats for container: " + container.getDockerContainerId());
+                stats = dockerService.getContainerStats(container.getDockerContainerId());
+                System.out.println("Stats received: " + stats);
+            } else {
+                // Simulated stats for demo
+                stats.put("cpuUsage", "0.5%");
+                stats.put("memoryUsage", "128MB / 512MB");
+                stats.put("networkIO", "1.2MB / 2.1MB");
+                stats.put("blockIO", "0B / 0B");
+                stats.put("simulated", true);
+                System.out.println("Using simulated stats for container: " + instanceId);
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("stats", stats);
+            response.put("containerId", instanceId);
+            response.put("timestamp", LocalDateTime.now());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("Error getting container stats: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to get container stats: " + e.getMessage()));
+        }
+    }
 } 

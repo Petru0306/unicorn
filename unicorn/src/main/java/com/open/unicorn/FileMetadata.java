@@ -33,15 +33,29 @@ public class FileMetadata {
     private String contentType;
 
     @Column(nullable = false)
+    private Integer version; // File version number
+
+    @Column(nullable = false)
+    private Boolean isLatest; // Whether this is the latest version
+
+    @Column(nullable = false)
     private LocalDateTime uploadedAt;
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column
+    private String checksum; // File checksum for integrity
+
+    @Column
+    private String tags; // JSON string for file tags
+
     // Default constructor
     public FileMetadata() {
         this.uploadedAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        this.version = 1;
+        this.isLatest = true;
     }
 
     // Constructor with all fields
@@ -55,6 +69,22 @@ public class FileMetadata {
         this.filePath = filePath;
         this.fileSize = fileSize;
         this.contentType = contentType;
+    }
+
+    // Constructor with version
+    public FileMetadata(String fileName, String originalFileName, String bucketName, 
+                       String ownerEmail, String filePath, Long fileSize, String contentType, 
+                       Integer version, Boolean isLatest) {
+        this();
+        this.fileName = fileName;
+        this.originalFileName = originalFileName;
+        this.bucketName = bucketName;
+        this.ownerEmail = ownerEmail;
+        this.filePath = filePath;
+        this.fileSize = fileSize;
+        this.contentType = contentType;
+        this.version = version;
+        this.isLatest = isLatest;
     }
 
     // Getters and setters
@@ -122,6 +152,22 @@ public class FileMetadata {
         this.contentType = contentType;
     }
 
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
+    }
+
+    public Boolean getIsLatest() {
+        return isLatest;
+    }
+
+    public void setIsLatest(Boolean isLatest) {
+        this.isLatest = isLatest;
+    }
+
     public LocalDateTime getUploadedAt() {
         return uploadedAt;
     }
@@ -136,5 +182,21 @@ public class FileMetadata {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getChecksum() {
+        return checksum;
+    }
+
+    public void setChecksum(String checksum) {
+        this.checksum = checksum;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
     }
 } 

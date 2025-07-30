@@ -173,10 +173,10 @@ public class UWSNoSQLController {
             JsonNode newData = objectMapper.valueToTree(request);
             
             // Merge JSON objects
-            var fieldIterator = newData.fields();
-            while (fieldIterator.hasNext()) {
-                var field = fieldIterator.next();
-                ((com.fasterxml.jackson.databind.node.ObjectNode) existingData).set(field.getKey(), field.getValue());
+            var fieldNames = newData.fieldNames();
+            while (fieldNames.hasNext()) {
+                String fieldName = fieldNames.next();
+                ((com.fasterxml.jackson.databind.node.ObjectNode) existingData).set(fieldName, newData.get(fieldName));
             }
 
             entity.setDocumentData(existingData.toString());

@@ -50,11 +50,19 @@ public class Container {
     @Column
     private String dockerContainerId;
 
+    @Column
+    private String restartPolicy; // "no", "always", "unless-stopped", "on-failure"
+
+    @Column
+    private Integer restartCount;
+
     // Default constructor
     public Container() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.status = "STOPPED";
+        this.restartPolicy = "no";
+        this.restartCount = 0;
     }
 
     // Constructor with all fields
@@ -181,5 +189,21 @@ public class Container {
 
     public void setDockerContainerId(String dockerContainerId) {
         this.dockerContainerId = dockerContainerId;
+    }
+
+    public String getRestartPolicy() {
+        return restartPolicy;
+    }
+
+    public void setRestartPolicy(String restartPolicy) {
+        this.restartPolicy = restartPolicy;
+    }
+
+    public Integer getRestartCount() {
+        return restartCount;
+    }
+
+    public void setRestartCount(Integer restartCount) {
+        this.restartCount = restartCount;
     }
 } 

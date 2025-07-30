@@ -2,8 +2,6 @@ package com.open.unicorn;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "nosql_entities")

@@ -180,6 +180,9 @@
                 <a class="nav-link me-3 active" href="/uws-rdb.html">
                     <i class="fas fa-database"></i> UWS-RDB
                 </a>
+                <a class="nav-link me-3" href="/uws-sqs.html">
+                    <i class="fas fa-envelope-open-text"></i> UWS-SQS
+                </a>
                 <button class="btn btn-danger" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
@@ -268,8 +271,8 @@
             <!-- Database Instances List -->
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5><i class="fas fa-list"></i> Your Database Instances</h5>
-                    <button class="btn btn-success" onclick="refreshInstances()">
+                    <h5><i class="fas fa-database"></i> Database Instances</h5>
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshInstances()">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
                 </div>
@@ -279,80 +282,129 @@
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
-                            <p class="mt-2">Loading database instances...</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- SQL Query Interface -->
+            <!-- Database Monitoring Dashboard -->
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="fas fa-code"></i> SQL Query Interface</h5>
+                    <h5><i class="fas fa-chart-line"></i> Database Monitoring</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="instanceSelect" class="form-label">Select Database Instance</label>
-                                <select class="form-select" id="instanceSelect">
-                                    <option value="">Choose an instance...</option>
-                                </select>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6><i class="fas fa-server"></i> Instance Statistics</h6>
+                                    <div id="instanceStats">
+                                        <p class="text-muted">Select an instance to view statistics</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-8">
-                            <div class="resource-info">
-                                <h6><i class="fas fa-info-circle"></i> Quick SQL Examples</h6>
-                                <div class="row">
-                                                                                                                  <div class="col-md-6">
-                                             <small class="text-muted">
-                                                 <strong>CREATE TABLE:</strong> CREATE TABLE users (id IDENTITY PRIMARY KEY, name VARCHAR(100), email VARCHAR(100));
-                                             </small>
-                                         </div>
-                                    <div class="col-md-6">
-                                        <small class="text-muted">
-                                            <strong>INSERT:</strong> INSERT INTO users (name, email) VALUES ('John Doe', 'john@example.com');
-                                        </small>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6><i class="fas fa-tachometer-alt"></i> Performance Metrics</h6>
+                                    <div id="performanceMetrics">
+                                        <p class="text-muted">Select an instance to view performance</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="sqlEditor" class="form-label">SQL Query</label>
-                        <textarea id="sqlEditor" class="form-control" rows="6" 
-                                  placeholder="Enter your SQL query here..."></textarea>
-                    </div>
-                    
-                    <div class="text-end mb-3">
-                        <button class="btn btn-primary" onclick="executeQuery()">
-                            <i class="fas fa-play"></i> Execute Query
-                        </button>
-                    </div>
+                </div>
+            </div>
 
-                    <!-- Query Results -->
-                    <div id="queryResults" style="display: none;">
-                        <h6><i class="fas fa-table"></i> Query Results</h6>
-                        <div class="results-table">
-                            <div id="resultsContent"></div>
+            <!-- Backup & Restore Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-download"></i> Backup & Restore</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label for="backupInstanceSelect" class="form-label">Select Database Instance for Backup/Restore</label>
+                            <select class="form-select" id="backupInstanceSelect">
+                                <option value="">Select Database Instance</option>
+                            </select>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h6><i class="fas fa-download"></i> Create Backup</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">Create a complete backup of your database instance</p>
+                                    <button class="btn btn-primary" onclick="createBackup()">
+                                        <i class="fas fa-download"></i> Create Backup
+                                    </button>
+                                    <div id="backupResult" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h6><i class="fas fa-upload"></i> Restore Backup</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">Restore your database from a backup file</p>
+                                    <input type="file" class="form-control mb-3" id="backupFile" accept=".json">
+                                    <button class="btn btn-success" onclick="restoreBackup()">
+                                        <i class="fas fa-upload"></i> Restore Backup
+                                    </button>
+                                    <div id="restoreResult" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SQL Query Editor -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-code"></i> SQL Query Editor</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <select class="form-select" id="instanceSelect">
+                                <option value="">Select Database Instance</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-success" onclick="executeQuery()">
+                                <i class="fas fa-play"></i> Execute Query
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="clearEditor()">
+                                <i class="fas fa-eraser"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="sqlEditor" placeholder="Enter your SQL query here..."></textarea>
+                    <div id="queryResult" class="mt-3"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Loading Overlay -->
-    <div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
-        <div style="background: white; padding: 2rem; border-radius: 10px; text-align: center;">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-2 mb-0">Processing...</p>
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner-border text-light" role="status">
+            <span class="visually-hidden">Loading...</span>
         </div>
     </div>
 
+    <!-- Alert Container -->
+    <div id="alertContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1050;"></div>
+
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/sql/sql.min.js"></script>
@@ -360,6 +412,7 @@
     <script>
         let codeMirror;
         let instances = [];
+        let currentBackup = null;
 
         // Initialize CodeMirror for SQL editor
         document.addEventListener('DOMContentLoaded', function() {
@@ -376,6 +429,7 @@
             // Check authentication and load data
             checkAuth();
             loadInstances();
+            updateBackupInstanceSelect(); // Initialize backup instance select
         });
 
         function checkAuth() {
@@ -423,6 +477,7 @@
                     showAlert('Database instance created successfully!', 'success');
                     document.getElementById('createInstanceForm').reset();
                     loadInstances();
+                    updateBackupInstanceSelect(); // Update backup instance select after creating new instance
                 } else {
                     showAlert(result.error || 'Failed to create database instance', 'danger');
                 }
@@ -449,10 +504,12 @@
                     instances = result.instances || [];
                     displayInstances();
                     updateInstanceSelect();
+                    updateBackupInstanceSelect(); // Update backup instance select after loading instances
                 } else {
                     showAlert(result.error || 'Failed to load instances', 'danger');
                 }
             } catch (error) {
+                console.error('Load instances error:', error);
                 showAlert('Error loading instances: ' + error.message, 'danger');
             }
         }
@@ -461,67 +518,81 @@
             const container = document.getElementById('instancesList');
             
             if (instances.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center text-muted">
-                        <i class="fas fa-database fa-3x mb-3"></i>
-                        <p>No database instances found. Create your first instance above!</p>
-                    </div>
-                `;
+                container.innerHTML = '<p class="text-muted text-center">No database instances found. Create your first instance above.</p>';
                 return;
             }
 
-            container.innerHTML = instances.map(instance => `
-                <div class="instance-card">
-                    <div class="row align-items-center">
-                        <div class="col-md-3">
-                            <h6 class="mb-1">${instance.dbName}</h6>
-                            <small class="text-muted">ID: ${instance.id}</small>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="row">
-                                <div class="col-4">
-                                    <small class="text-muted">CPU</small><br>
-                                    <strong>${instance.cpuLimit} cores</strong>
+            let html = '<div class="row">';
+            instances.forEach(instance => {
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="fas fa-database"></i> ${instance.dbName}</h6>
+                                <span class="badge bg-light text-dark">${instance.status}</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted">CPU Limit</small>
+                                        <p class="mb-1"><strong>${instance.cpuLimit} cores</strong></p>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">RAM Limit</small>
+                                        <p class="mb-1"><strong>${instance.ramLimit} MB</strong></p>
+                                    </div>
                                 </div>
-                                <div class="col-4">
-                                    <small class="text-muted">RAM</small><br>
-                                    <strong>${instance.ramLimit} MB</strong>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted">Storage Limit</small>
+                                        <p class="mb-1"><strong>${formatStorageSize(instance.storageLimit)}</strong></p>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Created</small>
+                                        <p class="mb-1"><strong>${new Date(instance.createdAt).toLocaleDateString()}</strong></p>
+                                    </div>
                                 </div>
-                                <div class="col-4">
-                                    <small class="text-muted">Storage</small><br>
-                                    <strong>${instance.storageLimit} MB</strong>
+                                <div class="btn-group w-100 mt-2" role="group">
+                                    <button class="btn btn-sm btn-outline-info" onclick="loadInstanceStats(${instance.id})">
+                                        <i class="fas fa-chart-bar"></i> Stats
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" onclick="loadPerformanceMetrics(${instance.id})">
+                                        <i class="fas fa-tachometer-alt"></i> Performance
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteInstance(${instance.id})">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-2">
-                            <span class="status-badge status-${instance.status.toLowerCase()}">
-                                ${instance.status}
-                            </span>
-                        </div>
-                        <div class="col-md-2">
-                            <small class="text-muted">Created</small><br>
-                            <strong>${new Date(instance.createdAt).toLocaleDateString()}</strong>
-                        </div>
-                        <div class="col-md-2 text-end">
-                            <button class="btn btn-danger btn-sm" onclick="deleteInstance(${instance.id})">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
         }
 
         function updateInstanceSelect() {
             const select = document.getElementById('instanceSelect');
-            select.innerHTML = '<option value="">Choose an instance...</option>';
-            
-            instances.filter(instance => instance.status === 'RUNNING').forEach(instance => {
-                const option = document.createElement('option');
-                option.value = instance.id;
-                option.textContent = `${instance.dbName} (${instance.cpuLimit} cores, ${instance.ramLimit} MB RAM)`;
-                select.appendChild(option);
+            select.innerHTML = '<option value="">Select Database Instance</option>';
+            instances.forEach(instance => {
+                select.innerHTML += `<option value="${instance.id}">${instance.dbName}</option>`;
             });
+        }
+
+        function updateBackupInstanceSelect() {
+            const select = document.getElementById('backupInstanceSelect');
+            select.innerHTML = '<option value="">Select Database Instance</option>';
+            instances.forEach(instance => {
+                select.innerHTML += `<option value="${instance.id}">${instance.dbName}</option>`;
+            });
+        }
+
+        function formatStorageSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
         }
 
         async function deleteInstance(instanceId) {
@@ -543,6 +614,7 @@
                 if (response.ok) {
                     showAlert('Database instance deleted successfully!', 'success');
                     loadInstances();
+                    updateBackupInstanceSelect(); // Update backup instance select after deleting instance
                 } else {
                     showAlert(result.error || 'Failed to delete instance', 'danger');
                 }
@@ -556,6 +628,225 @@
 
         function refreshInstances() {
             loadInstances();
+        }
+
+        // NEW FEATURES
+
+        // Load instance statistics
+        async function loadInstanceStats(instanceId) {
+            try {
+                const response = await fetch(`/api/uws-rdb/instances/${instanceId}/stats`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    const stats = result.stats;
+                    const container = document.getElementById('instanceStats');
+                    container.innerHTML = `
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <h4 class="text-primary">${stats.tableCount}</h4>
+                                <small class="text-muted">Tables</small>
+                            </div>
+                            <div class="col-6">
+                                <h4 class="text-success">${stats.totalRows}</h4>
+                                <small class="text-muted">Total Rows</small>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">Storage Used</small>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: ${(stats.estimatedStorageUsed / stats.storageLimit) * 100}%">
+                                    ${formatStorageSize(stats.estimatedStorageUsed)} / ${formatStorageSize(stats.storageLimit)}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    showAlert(result.error || 'Failed to load statistics', 'danger');
+                }
+            } catch (error) {
+                console.error('Load stats error:', error);
+                showAlert('Error loading statistics: ' + error.message, 'danger');
+            }
+        }
+
+        // Load performance metrics
+        async function loadPerformanceMetrics(instanceId) {
+            try {
+                const response = await fetch(`/api/uws-rdb/instances/${instanceId}/performance`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    const metrics = result.performance;
+                    const container = document.getElementById('performanceMetrics');
+                    container.innerHTML = `
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <h4 class="text-warning">${metrics.cpuUsage.toFixed(1)}%</h4>
+                                <small class="text-muted">CPU Usage</small>
+                            </div>
+                            <div class="col-6">
+                                <h4 class="text-info">${metrics.memoryUsage.toFixed(1)}%</h4>
+                                <small class="text-muted">Memory Usage</small>
+                            </div>
+                        </div>
+                        <div class="row text-center mt-2">
+                            <div class="col-6">
+                                <h4 class="text-success">${metrics.queriesPerSecond.toFixed(1)}</h4>
+                                <small class="text-muted">Queries/sec</small>
+                            </div>
+                            <div class="col-6">
+                                <h4 class="text-primary">${metrics.averageQueryTime.toFixed(0)}ms</h4>
+                                <small class="text-muted">Avg Query Time</small>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">Active Connections: ${metrics.activeConnections}</small><br>
+                            <small class="text-muted">Uptime: ${metrics.uptime}</small>
+                        </div>
+                    `;
+                } else {
+                    showAlert(result.error || 'Failed to load performance metrics', 'danger');
+                }
+            } catch (error) {
+                console.error('Load performance error:', error);
+                showAlert('Error loading performance metrics: ' + error.message, 'danger');
+            }
+        }
+
+        // Create backup
+        async function createBackup() {
+            const instanceId = document.getElementById('backupInstanceSelect').value;
+            if (!instanceId) {
+                showAlert('Please select a database instance first', 'warning');
+                return;
+            }
+
+            try {
+                showLoading();
+                const response = await fetch(`/api/uws-rdb/instances/${instanceId}/backup`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    currentBackup = result.backup;
+                    const container = document.getElementById('backupResult');
+                    container.innerHTML = `
+                        <div class="alert alert-success">
+                            <h6><i class="fas fa-check"></i> Backup Created Successfully!</h6>
+                            <p class="mb-1">Database: ${result.backup.databaseName}</p>
+                            <p class="mb-1">Tables: ${result.backup.tables.length}</p>
+                            <p class="mb-2">Date: ${new Date(result.backup.backupDate).toLocaleString()}</p>
+                            <button class="btn btn-sm btn-outline-primary" onclick="downloadBackup()">
+                                <i class="fas fa-download"></i> Download Backup
+                            </button>
+                        </div>
+                    `;
+                    showAlert('Backup created successfully!', 'success');
+                } else {
+                    showAlert(result.error || 'Failed to create backup', 'danger');
+                }
+            } catch (error) {
+                console.error('Create backup error:', error);
+                showAlert('Error creating backup: ' + error.message, 'danger');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Download backup
+        function downloadBackup() {
+            if (!currentBackup) {
+                showAlert('No backup available to download', 'warning');
+                return;
+            }
+
+            const dataStr = JSON.stringify(currentBackup, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `backup_${currentBackup.databaseName}_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Restore backup
+        async function restoreBackup() {
+            const instanceId = document.getElementById('backupInstanceSelect').value;
+            const fileInput = document.getElementById('backupFile');
+            
+            if (!instanceId) {
+                showAlert('Please select a database instance first', 'warning');
+                return;
+            }
+
+            if (!fileInput.files[0]) {
+                showAlert('Please select a backup file', 'warning');
+                return;
+            }
+
+            try {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = async function(e) {
+                    try {
+                        const backupData = JSON.parse(e.target.result);
+                        
+                        showLoading();
+                        const response = await fetch(`/api/uws-rdb/instances/${instanceId}/restore`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                            },
+                            body: JSON.stringify(backupData)
+                        });
+
+                        const result = await response.json();
+                        
+                        if (response.ok) {
+                            const container = document.getElementById('restoreResult');
+                            container.innerHTML = `
+                                <div class="alert alert-success">
+                                    <h6><i class="fas fa-check"></i> Backup Restored Successfully!</h6>
+                                    <p class="mb-1">Tables restored: ${result.restoredTables}</p>
+                                    <p class="mb-0">Rows restored: ${result.restoredRows}</p>
+                                </div>
+                            `;
+                            showAlert('Backup restored successfully!', 'success');
+                            fileInput.value = '';
+                        } else {
+                            showAlert(result.error || 'Failed to restore backup', 'danger');
+                        }
+                    } catch (error) {
+                        showAlert('Invalid backup file format', 'danger');
+                    } finally {
+                        hideLoading();
+                    }
+                };
+                
+                reader.readAsText(file);
+            } catch (error) {
+                console.error('Restore backup error:', error);
+                showAlert('Error restoring backup: ' + error.message, 'danger');
+            }
         }
 
         // Execute SQL query
@@ -585,98 +876,102 @@
                 });
 
                 const result = await response.json();
-                
+
                 if (response.ok) {
-                    displayQueryResults(result);
+                    displayQueryResult(result);
+                    showAlert('Query executed successfully!', 'success');
+                    // Clear the editor after successful execution to prevent concatenation
+                    codeMirror.setValue('');
                 } else {
                     showAlert(result.error || 'Failed to execute query', 'danger');
                 }
             } catch (error) {
-                console.error('Query execution error:', error);
+                console.error('Execute query error:', error);
                 showAlert('Error executing query: ' + error.message, 'danger');
             } finally {
-                // Always hide loading modal, regardless of success or failure
                 hideLoading();
             }
         }
 
-        function displayQueryResults(result) {
-            const container = document.getElementById('queryResults');
-            const content = document.getElementById('resultsContent');
-            
-            let html = `
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle"></i> Query executed successfully!
-                    <br><small>Operation: ${result.result.operation} | Affected Rows: ${result.result.affectedRows}</small>
-                </div>
-            `;
+        function displayQueryResult(result) {
+            const container = document.getElementById('queryResult');
+            const queryResult = result.result;
 
-            if (result.result.data && result.result.data.length > 0) {
-                const columns = Object.keys(result.result.data[0]);
-                html += `
-                    <table class="table table-striped table-hover">
-                        <thead>
-                            <tr>
-                                ${columns.map(col => `<th>${col}</th>`).join('')}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${result.result.data.map(row => `
-                                <tr>
-                                    ${columns.map(col => `<td>${row[col] || ''}</td>`).join('')}
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                `;
-            } else if (result.result.operation !== 'SELECT') {
-                html += `
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> Query completed. ${result.result.affectedRows} row(s) affected.
-                    </div>
-                `;
+            let html = '<div class="alert alert-success">';
+            html += `<h6><i class="fas fa-check"></i> Query Executed Successfully</h6>`;
+            html += `<p><strong>Operation:</strong> ${queryResult.operation}</p>`;
+            
+            if (queryResult.affectedRows !== undefined) {
+                html += `<p><strong>Affected Rows:</strong> ${queryResult.affectedRows}</p>`;
             }
 
-            content.innerHTML = html;
-            container.style.display = 'block';
+            if (queryResult.data && queryResult.data.length > 0) {
+                html += '<div class="table-responsive mt-3">';
+                html += '<table class="table table-sm table-striped">';
+                
+                // Table header
+                html += '<thead><tr>';
+                Object.keys(queryResult.data[0]).forEach(key => {
+                    html += `<th>${key}</th>`;
+                });
+                html += '</tr></thead>';
+                
+                // Table body
+                html += '<tbody>';
+                queryResult.data.forEach(row => {
+                    html += '<tr>';
+                    Object.values(row).forEach(value => {
+                        html += `<td>${value !== null ? value : '<em>null</em>'}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table></div>';
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
         }
 
-        function showAlert(message, type) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-            alertDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            const container = document.querySelector('.main-container');
-            container.insertBefore(alertDiv, container.firstChild);
-            
-            // Auto-remove after 5 seconds
-            setTimeout(() => {
-                if (alertDiv.parentNode) {
-                    alertDiv.remove();
+        function clearEditor() {
+            if (codeMirror.getValue().trim()) {
+                if (confirm('Are you sure you want to clear the SQL editor?')) {
+                    codeMirror.setValue('');
+                    document.getElementById('queryResult').innerHTML = '';
                 }
-            }, 5000);
+            } else {
+                codeMirror.setValue('');
+                document.getElementById('queryResult').innerHTML = '';
+            }
         }
 
         function showLoading() {
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) {
-                overlay.style.display = 'flex';
-                
-                // Add a timeout to automatically hide the overlay after 30 seconds
-                setTimeout(() => {
-                    hideLoading();
-                }, 30000);
-            }
+            document.getElementById('loadingOverlay').style.display = 'flex';
         }
 
         function hideLoading() {
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) {
-                overlay.style.display = 'none';
-            }
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alertId = 'alert-' + Date.now();
+            
+            const alertHtml = `
+                <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', alertHtml);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
         }
     </script>
 </body>

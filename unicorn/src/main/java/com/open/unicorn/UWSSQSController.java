@@ -200,19 +200,30 @@ public class UWSSQSController {
             Queue queue = queueOpt.get();
             List<QueueMessage> messages;
 
+            System.out.println("=== SQS DEBUG ===");
+            System.out.println("Queue ID: " + queueId);
+            System.out.println("Receive mode: " + receive);
+            System.out.println("Max messages: " + maxMessages);
+
             if (receive) {
                 // Get visible messages and make them invisible
+                System.out.println("RECEIVE MODE: Getting visible messages and making them invisible");
                 messages = messageRepository.findVisibleMessagesByQueueId(queueId);
+                System.out.println("Found " + messages.size() + " visible messages");
+                
                 messages = messages.stream().limit(maxMessages).collect(Collectors.toList());
                 
                 // Make messages invisible for visibility timeout
                 for (QueueMessage message : messages) {
+                    System.out.println("Making message " + message.getId() + " invisible for " + queue.getVisibilityTimeout() + " seconds");
                     message.makeInvisible(queue.getVisibilityTimeout());
                     messageRepository.save(message);
                 }
             } else {
-                // Just peek at messages (get all non-deleted messages)
-                messages = messageRepository.findNonDeletedMessagesByQueueId(queueId);
+                // Just peek at messages - show only visible messages (not deleted, not currently invisible)
+                System.out.println("PEEK MODE: Getting only visible messages");
+                messages = messageRepository.findVisibleMessagesByQueueId(queueId);
+                System.out.println("Found " + messages.size() + " visible messages for peek");
             }
 
             List<Map<String, Object>> response = new ArrayList<>();
@@ -229,10 +240,16 @@ public class UWSSQSController {
                     messageMap.put("visibilityExpiry", message.getVisibilityExpiry());
                 }
                 response.add(messageMap);
+                System.out.println("Returning message " + message.getId() + " with status: " + message.getStatus() + ", visible: " + message.isVisible());
             }
+
+            System.out.println("Total messages returned: " + response.size());
+            System.out.println("=== END SQS DEBUG ===");
 
             return ResponseEntity.ok(Map.of("messages", response));
         } catch (Exception e) {
+            System.err.println("Error in getMessages: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.internalServerError().body(Map.of("error", "Failed to get messages: " + e.getMessage()));
         }
     }
@@ -241,6 +258,57 @@ public class UWSSQSController {
     @DeleteMapping("/queues/{queueId}/messages/{messageId}")
     public ResponseEntity<?> deleteMessage(@PathVariable Long queueId, @PathVariable Long messageId, Authentication authentication) {
         try {
+            System.out.println("=== DELETE MESSAGE DEBUG ===");
+            System.out.println("Queue ID: " + queueId);
+            System.out.println("Message ID: " + messageId);
+            
+            String userEmail = authentication.getName();
+            User user = userRepository.findByEmail(userEmail);
+            
+            if (user == null) {
+                System.out.println("ERROR: User not found");
+                return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
+            }
+
+            System.out.println("User: " + userEmail);
+
+            // Verify queue belongs to user
+            Optional<Queue> queueOpt = queueRepository.findByIdAndUserId(queueId, user.getId());
+            if (queueOpt.isEmpty()) {
+                System.out.println("ERROR: Queue not found or doesn't belong to user");
+                return ResponseEntity.notFound().build();
+            }
+
+            System.out.println("Queue found: " + queueOpt.get().getQueueName());
+
+            // Find and delete message
+            Optional<QueueMessage> messageOpt = messageRepository.findByIdAndQueueId(messageId, queueId);
+            if (messageOpt.isEmpty()) {
+                System.out.println("ERROR: Message not found");
+                return ResponseEntity.notFound().build();
+            }
+
+            QueueMessage message = messageOpt.get();
+            System.out.println("Message found: " + message.getId() + " with status: " + message.getStatus());
+            
+            message.setStatus(QueueMessage.MessageStatus.DELETED);
+            messageRepository.save(message);
+            
+            System.out.println("Message deleted successfully");
+            System.out.println("=== END DELETE MESSAGE DEBUG ===");
+
+            return ResponseEntity.ok(Map.of("message", "Message deleted successfully"));
+        } catch (Exception e) {
+            System.err.println("Error in deleteMessage: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to delete message: " + e.getMessage()));
+        }
+    }
+
+    // Manual cleanup endpoint for testing
+    @PostMapping("/queues/{queueId}/cleanup")
+    public ResponseEntity<?> manualCleanup(@PathVariable Long queueId, Authentication authentication) {
+        try {
             String userEmail = authentication.getName();
             User user = userRepository.findByEmail(userEmail);
             
@@ -248,25 +316,29 @@ public class UWSSQSController {
                 return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
             }
 
-            // Verify queue belongs to user
             Optional<Queue> queueOpt = queueRepository.findByIdAndUserId(queueId, user.getId());
             if (queueOpt.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
 
-            // Find and delete message
-            Optional<QueueMessage> messageOpt = messageRepository.findByIdAndQueueId(messageId, queueId);
-            if (messageOpt.isEmpty()) {
-                return ResponseEntity.notFound().build();
+            // Force cleanup for this queue
+            List<QueueMessage> expiredMessages = messageRepository.findExpiredInvisibleMessages(LocalDateTime.now());
+            int restoredCount = 0;
+            
+            for (QueueMessage message : expiredMessages) {
+                if (message.getQueue().getId().equals(queueId) && message.hasExpiredVisibility()) {
+                    message.makeVisible();
+                    messageRepository.save(message);
+                    restoredCount++;
+                }
             }
 
-            QueueMessage message = messageOpt.get();
-            message.setStatus(QueueMessage.MessageStatus.DELETED);
-            messageRepository.save(message);
-
-            return ResponseEntity.ok(Map.of("message", "Message deleted successfully"));
+            return ResponseEntity.ok(Map.of(
+                "message", "Cleanup completed",
+                "restoredMessages", restoredCount
+            ));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to delete message: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to cleanup: " + e.getMessage()));
         }
     }
 

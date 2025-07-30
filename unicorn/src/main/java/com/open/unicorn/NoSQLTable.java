@@ -2,7 +2,6 @@ package com.open.unicorn;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "nosql_tables")

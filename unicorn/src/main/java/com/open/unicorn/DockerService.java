@@ -5,6 +5,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class DockerService {
@@ -111,5 +113,77 @@ public class DockerService {
             // Return empty list if Docker is not available
         }
         return containers;
+    }
+
+    public String getContainerLogs(String containerId, int lines) {
+        try {
+            Process process = Runtime.getRuntime().exec("docker logs --tail " + lines + " " + containerId);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder logs = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                logs.append(line).append("\n");
+            }
+            reader.close();
+            return logs.toString();
+        } catch (Exception e) {
+            return "Failed to retrieve logs: " + e.getMessage();
+        }
+    }
+
+    public Map<String, Object> getContainerStats(String containerId) {
+        Map<String, Object> stats = new HashMap<>();
+        try {
+            // Get CPU and memory usage with simpler format
+            Process process = Runtime.getRuntime().exec("docker stats --no-stream --format \"{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}\t{{.BlockIO}}\" " + containerId);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line = reader.readLine(); // Get actual stats (no header with this format)
+            reader.close();
+            
+            if (line != null && !line.trim().isEmpty()) {
+                String[] parts = line.split("\\s+");
+                if (parts.length >= 4) {
+                    stats.put("cpuUsage", parts[0]);
+                    stats.put("memoryUsage", parts[1]);
+                    stats.put("networkIO", parts[2]);
+                    stats.put("blockIO", parts[3]);
+                } else {
+                    // Fallback: try to get stats with default format
+                    Process fallbackProcess = Runtime.getRuntime().exec("docker stats --no-stream " + containerId);
+                    BufferedReader fallbackReader = new BufferedReader(new InputStreamReader(fallbackProcess.getInputStream()));
+                    String fallbackLine = fallbackReader.readLine(); // Skip header
+                    fallbackLine = fallbackReader.readLine(); // Get actual stats
+                    fallbackReader.close();
+                    
+                    if (fallbackLine != null && !fallbackLine.trim().isEmpty()) {
+                        // Parse the default format: CONTAINER ID   NAME   CPU %   MEM USAGE / LIMIT   MEM %   NET I/O   BLOCK I/O   PIDS
+                        String[] fallbackParts = fallbackLine.split("\\s+");
+                        if (fallbackParts.length >= 7) {
+                            stats.put("cpuUsage", fallbackParts[2]);
+                            stats.put("memoryUsage", fallbackParts[3] + " / " + fallbackParts[5]);
+                            stats.put("networkIO", fallbackParts[6]);
+                            stats.put("blockIO", fallbackParts[7]);
+                        }
+                    }
+                }
+            }
+            
+            // If still no stats, provide default values
+            if (stats.isEmpty()) {
+                stats.put("cpuUsage", "0.00%");
+                stats.put("memoryUsage", "0B / 0B");
+                stats.put("networkIO", "0B / 0B");
+                stats.put("blockIO", "0B / 0B");
+                stats.put("error", "No stats available");
+            }
+        } catch (Exception e) {
+            stats.put("error", "Failed to get stats: " + e.getMessage());
+            // Provide fallback values
+            stats.put("cpuUsage", "0.00%");
+            stats.put("memoryUsage", "0B / 0B");
+            stats.put("networkIO", "0B / 0B");
+            stats.put("blockIO", "0B / 0B");
+        }
+        return stats;
     }
 } 
