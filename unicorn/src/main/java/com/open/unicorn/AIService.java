@@ -1,16 +1,20 @@
 package com.open.unicorn;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Random;
-import java.util.UUID;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.Base64;
 
 @Service
 public class AIService {
@@ -24,16 +28,27 @@ public class AIService {
     @Autowired
     private UserRepository userRepository;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final Random random = new Random();
+    @Value("${google.gemini.api.key}")
+    private String geminiApiKey;
 
-    // Predefined AI models
+    @Value("${google.gemini.model.name}")
+    private String geminiModelName;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final WebClient webClient = WebClient.builder()
+        .baseUrl("https://generativelanguage.googleapis.com/v1beta/models")
+        .build();
+
+    // Predefined AI models with Gemini capabilities
     private static final Map<String, String> AI_MODELS = Map.of(
         "sentiment-analysis", "Sentiment Analysis",
         "image-labeling", "Image Labeling", 
         "code-explainer", "Code Explainer",
         "text-summarizer", "Text Summarizer",
-        "language-detector", "Language Detector"
+        "language-detector", "Language Detector",
+        "text-generator", "Text Generator",
+        "code-generator", "Code Generator",
+        "translation", "Translation"
     );
 
     // Function types
@@ -78,6 +93,9 @@ public class AIService {
         function.setType(type);
         function.setModel(model);
         function.setApiEndpoint("/api/ai/functions/" + UUID.randomUUID().toString() + "/invoke");
+        function.setMaxExecutionsPerDay(MAX_EXECUTIONS_PER_DAY);
+        function.setCurrentExecutionsToday(0);
+        function.setLastResetDate(LocalDateTime.now());
 
         return aiFunctionRepository.save(function);
     }
@@ -116,23 +134,181 @@ public class AIService {
         execution.setInput(input);
         execution.setInputSizeBytes((long) input.getBytes().length);
 
-        // Simulate AI processing time
+        // Process with Gemini AI
         long startTime = System.currentTimeMillis();
         try {
-            Thread.sleep(random.nextInt(500) + 200); // 200-700ms
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            String output = processWithGemini(function.getModel(), input, function.getType());
+            execution.setOutput(output);
+            execution.setStatus("success");
+        } catch (Exception e) {
+            execution.setOutput("{\"error\": \"AI processing failed\", \"message\": \"" + e.getMessage() + "\"}");
+            execution.setStatus("error");
         }
+        
         long executionTime = System.currentTimeMillis() - startTime;
         execution.setExecutionTimeMs(executionTime);
-
-        // Generate mock AI output based on model type
-        String output = generateMockAIOutput(function.getModel(), input, function.getType());
-        execution.setOutput(output);
-        execution.setOutputSizeBytes((long) output.getBytes().length);
-        execution.setStatus("success");
+        execution.setOutputSizeBytes((long) execution.getOutput().getBytes().length);
 
         return aiExecutionRepository.save(execution);
+    }
+
+    private String processWithGemini(String model, String input, String type) throws Exception {
+        String prompt = generatePrompt(model, input, type);
+        
+        Map<String, Object> requestBody = new HashMap<>();
+        Map<String, Object> contents = new HashMap<>();
+        List<Map<String, Object>> parts = new ArrayList<>();
+        
+        Map<String, Object> textPart = new HashMap<>();
+        textPart.put("text", prompt);
+        parts.add(textPart);
+        
+        // Add image part if it's an image type and input is base64 image
+        if (type.equals("image") && isBase64Image(input)) {
+            Map<String, Object> imagePart = new HashMap<>();
+            Map<String, Object> inlineData = new HashMap<>();
+            inlineData.put("mime_type", "image/jpeg");
+            inlineData.put("data", input);
+            imagePart.put("inline_data", inlineData);
+            parts.add(imagePart);
+        }
+        
+        contents.put("parts", parts);
+        requestBody.put("contents", Arrays.asList(contents));
+        
+        // Add safety settings
+        Map<String, Object> safetySettings = new HashMap<>();
+        safetySettings.put("category", "HARM_CATEGORY_HARASSMENT");
+        safetySettings.put("threshold", "BLOCK_MEDIUM_AND_ABOVE");
+        requestBody.put("safety_settings", Arrays.asList(safetySettings));
+        
+        // Add generation config
+        Map<String, Object> generationConfig = new HashMap<>();
+        generationConfig.put("temperature", 0.7);
+        generationConfig.put("top_k", 40);
+        generationConfig.put("top_p", 0.95);
+        generationConfig.put("max_output_tokens", 2048);
+        requestBody.put("generation_config", generationConfig);
+
+        try {
+            String response = webClient.post()
+                .uri("/" + geminiModelName + ":generateContent?key=" + geminiApiKey)
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+            return parseGeminiResponse(response);
+        } catch (WebClientResponseException e) {
+            throw new RuntimeException("Gemini API error: " + e.getResponseBodyAsString());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to call Gemini API: " + e.getMessage());
+        }
+    }
+
+    private String parseGeminiResponse(String response) throws Exception {
+        Map<String, Object> responseMap = objectMapper.readValue(response, new TypeReference<Map<String, Object>>() {});
+        
+        Object candidatesObj = responseMap.get("candidates");
+        if (candidatesObj instanceof List<?>) {
+            List<?> candidates = (List<?>) candidatesObj;
+            if (!candidates.isEmpty() && candidates.get(0) instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> candidate = (Map<String, Object>) candidates.get(0);
+                
+                Object contentObj = candidate.get("content");
+                if (contentObj instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> content = (Map<String, Object>) contentObj;
+                    
+                    Object partsObj = content.get("parts");
+                    if (partsObj instanceof List<?>) {
+                        List<?> partsList = (List<?>) partsObj;
+                        if (!partsList.isEmpty() && partsList.get(0) instanceof Map) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> part = (Map<String, Object>) partsList.get(0);
+                            Object textObj = part.get("text");
+                            if (textObj instanceof String) {
+                                return (String) textObj;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // If no valid response, return error
+        return "{\"error\": \"No valid response from Gemini API\"}";
+    }
+
+    private String generatePrompt(String model, String input, String type) {
+        switch (model) {
+            case "sentiment-analysis":
+                return String.format(
+                    "Analyze the sentiment of the following text and return a JSON response with sentiment (positive/negative/neutral), confidence (0.0-1.0), and explanation:\n\nText: %s\n\nRespond only with valid JSON.",
+                    input
+                );
+                
+            case "image-labeling":
+                return "Analyze this image and identify all objects, people, animals, and scenes visible. Return a JSON response with an array of detected objects, each containing 'label', 'confidence' (0.0-1.0), and 'description'. Respond only with valid JSON.";
+                
+            case "code-explainer":
+                return String.format(
+                    "Explain the following code in detail. Return a JSON response with explanation, complexity, language, lines_of_code, and suggestions for improvement:\n\nCode:\n%s\n\nRespond only with valid JSON.",
+                    input
+                );
+                
+            case "text-summarizer":
+                return String.format(
+                    "Summarize the following text in a concise way. Return a JSON response with summary, original_length, summary_length, compression_ratio, and key_topics:\n\nText: %s\n\nRespond only with valid JSON.",
+                    input
+                );
+                
+            case "language-detector":
+                return String.format(
+                    "Detect the language of the following text. Return a JSON response with detected_language, confidence (0.0-1.0), language_code, and text_length:\n\nText: %s\n\nRespond only with valid JSON.",
+                    input
+                );
+                
+            case "text-generator":
+                return String.format(
+                    "Generate creative text based on the following prompt. Return a JSON response with generated_text, creativity_score (0.0-1.0), and word_count:\n\nPrompt: %s\n\nRespond only with valid JSON.",
+                    input
+                );
+                
+            case "code-generator":
+                return String.format(
+                    "Generate code based on the following description. Return a JSON response with generated_code, language, complexity, and explanation:\n\nDescription: %s\n\nRespond only with valid JSON.",
+                    input
+                );
+                
+            case "translation":
+                return String.format(
+                    "Translate the following text to English. Return a JSON response with translated_text, source_language, target_language, and confidence (0.0-1.0):\n\nText: %s\n\nRespond only with valid JSON.",
+                    input
+                );
+                
+            default:
+                return String.format(
+                    "Process the following input and provide a helpful response. Return a JSON response with result and any relevant metadata:\n\nInput: %s\n\nRespond only with valid JSON.",
+                    input
+                );
+        }
+    }
+
+    private boolean isBase64Image(String input) {
+        try {
+            byte[] decoded = Base64.getDecoder().decode(input);
+            // Check if it's a valid image by looking at magic bytes
+            if (decoded.length >= 2) {
+                return (decoded[0] == (byte) 0xFF && decoded[1] == (byte) 0xD8) || // JPEG
+                       (decoded[0] == (byte) 0x89 && decoded[1] == (byte) 0x50) || // PNG
+                       (decoded[0] == (byte) 0x47 && decoded[1] == (byte) 0x49);  // GIF
+            }
+        } catch (Exception e) {
+            // Not base64 or not an image
+        }
+        return false;
     }
 
     public void deleteFunction(String userEmail, Long functionId) {
@@ -175,6 +351,8 @@ public class AIService {
         stats.put("todayExecutions", aiExecutionRepository.countTodayByUser(user));
         stats.put("maxFunctionsPerUser", MAX_FUNCTIONS_PER_USER);
         stats.put("maxExecutionsPerDay", MAX_EXECUTIONS_PER_DAY);
+        stats.put("aiModel", geminiModelName);
+        stats.put("aiProvider", "Google Gemini");
 
         return stats;
     }
@@ -187,159 +365,13 @@ public class AIService {
         return new ArrayList<>(FUNCTION_TYPES);
     }
 
-    private String generateMockAIOutput(String model, String input, String type) {
-        try {
-            switch (model) {
-                case "sentiment-analysis":
-                    return generateSentimentAnalysis(input);
-                case "image-labeling":
-                    return generateImageLabeling(input);
-                case "code-explainer":
-                    return generateCodeExplainer(input);
-                case "text-summarizer":
-                    return generateTextSummarizer(input);
-                case "language-detector":
-                    return generateLanguageDetector(input);
-                default:
-                    return "{\"result\": \"Unknown model type\", \"confidence\": 0.0}";
-            }
-        } catch (Exception e) {
-            return "{\"error\": \"Failed to process input\", \"message\": \"" + e.getMessage() + "\"}";
-        }
-    }
-
-    private String generateSentimentAnalysis(String input) {
-        String[] sentiments = {"positive", "negative", "neutral"};
-        String sentiment = sentiments[random.nextInt(sentiments.length)];
-        double confidence = 0.7 + random.nextDouble() * 0.3; // 0.7-1.0
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("sentiment", sentiment);
-        result.put("confidence", Math.round(confidence * 100.0) / 100.0);
-        result.put("input_length", input.length());
-        result.put("processed_at", LocalDateTime.now().toString());
-
-        try {
-            return objectMapper.writeValueAsString(result);
-        } catch (Exception e) {
-            return "{\"error\": \"Failed to generate sentiment analysis\", \"message\": \"" + e.getMessage() + "\"}";
-        }
-    }
-
-    private String generateImageLabeling(String input) {
-        String[][] possibleLabels = {
-            {"tree", "sky", "car", "building", "person"},
-            {"cat", "dog", "bird", "flower", "mountain"},
-            {"computer", "phone", "book", "chair", "table"},
-            {"ocean", "beach", "sunset", "clouds", "grass"}
-        };
-
-        String[] labels = possibleLabels[random.nextInt(possibleLabels.length)];
-        int numLabels = random.nextInt(3) + 2; // 2-4 labels
-
-        List<Map<String, Object>> detectedObjects = new ArrayList<>();
-        for (int i = 0; i < numLabels; i++) {
-            Map<String, Object> obj = new HashMap<>();
-            obj.put("label", labels[i]);
-            obj.put("confidence", Math.round((0.6 + random.nextDouble() * 0.4) * 100.0) / 100.0);
-            obj.put("bbox", Arrays.asList(
-                random.nextDouble(), random.nextDouble(),
-                random.nextDouble(), random.nextDouble()
-            ));
-            detectedObjects.add(obj);
-        }
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("detected_objects", detectedObjects);
-        result.put("total_objects", detectedObjects.size());
-        result.put("processing_time_ms", random.nextInt(500) + 200);
-
-        try {
-            return objectMapper.writeValueAsString(result);
-        } catch (Exception e) {
-            return "{\"error\": \"Failed to generate image labeling\", \"message\": \"" + e.getMessage() + "\"}";
-        }
-    }
-
-    private String generateCodeExplainer(String input) {
-        String[] explanations = {
-            "This code implements a recursive function that calculates the Fibonacci sequence. It uses memoization to improve performance by storing previously calculated values.",
-            "This is a sorting algorithm implementation using the quicksort method. It partitions the array around a pivot element and recursively sorts the subarrays.",
-            "This function performs data validation by checking input parameters against predefined constraints and throwing appropriate exceptions for invalid data.",
-            "This code creates a REST API endpoint that handles HTTP requests, processes JSON data, and returns structured responses with proper error handling.",
-            "This is a database query function that uses prepared statements to prevent SQL injection attacks while efficiently retrieving data from the database."
-        };
-
-        String explanation = explanations[random.nextInt(explanations.length)];
-        
-        Map<String, Object> result = new HashMap<>();
-        result.put("explanation", explanation);
-        result.put("complexity", "O(n log n)");
-        result.put("language", detectProgrammingLanguage(input));
-        result.put("lines_of_code", input.split("\n").length);
-        result.put("suggestions", Arrays.asList(
-            "Consider adding input validation",
-            "Add error handling for edge cases",
-            "Optimize for better performance"
-        ));
-
-        try {
-            return objectMapper.writeValueAsString(result);
-        } catch (Exception e) {
-            return "{\"error\": \"Failed to generate code explanation\", \"message\": \"" + e.getMessage() + "\"}";
-        }
-    }
-
-    private String generateTextSummarizer(String input) {
-        String summary = "This is a generated summary of the provided text. It captures the main points and key information while maintaining the essential meaning of the original content.";
-        
-        Map<String, Object> result = new HashMap<>();
-        result.put("summary", summary);
-        result.put("original_length", input.length());
-        result.put("summary_length", summary.length());
-        result.put("compression_ratio", Math.round((double) summary.length() / input.length() * 100.0) / 100.0);
-        result.put("key_topics", Arrays.asList("topic1", "topic2", "topic3"));
-
-        try {
-            return objectMapper.writeValueAsString(result);
-        } catch (Exception e) {
-            return "{\"error\": \"Failed to generate text summary\", \"message\": \"" + e.getMessage() + "\"}";
-        }
-    }
-
-    private String generateLanguageDetector(String input) {
-        String[] languages = {"English", "Spanish", "French", "German", "Italian", "Portuguese", "Russian", "Chinese", "Japanese", "Korean"};
-        String detectedLanguage = languages[random.nextInt(languages.length)];
-        double confidence = 0.8 + random.nextDouble() * 0.2; // 0.8-1.0
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("detected_language", detectedLanguage);
-        result.put("confidence", Math.round(confidence * 100.0) / 100.0);
-        result.put("language_code", getLanguageCode(detectedLanguage));
-        result.put("text_length", input.length());
-
-        try {
-            return objectMapper.writeValueAsString(result);
-        } catch (Exception e) {
-            return "{\"error\": \"Failed to generate language detection\", \"message\": \"" + e.getMessage() + "\"}";
-        }
-    }
-
-    private String detectProgrammingLanguage(String code) {
-        if (code.contains("public class") || code.contains("import java")) return "Java";
-        if (code.contains("def ") || code.contains("import ")) return "Python";
-        if (code.contains("function ") || code.contains("var ") || code.contains("const ")) return "JavaScript";
-        if (code.contains("#include") || code.contains("int main")) return "C/C++";
-        if (code.contains("package ") || code.contains("func ")) return "Go";
-        return "Unknown";
-    }
-
-    private String getLanguageCode(String language) {
-        Map<String, String> languageCodes = Map.of(
-            "English", "en", "Spanish", "es", "French", "fr", "German", "de",
-            "Italian", "it", "Portuguese", "pt", "Russian", "ru", "Chinese", "zh",
-            "Japanese", "ja", "Korean", "ko"
-        );
-        return languageCodes.getOrDefault(language, "unknown");
+    public Map<String, Object> getAIConfiguration() {
+        Map<String, Object> config = new HashMap<>();
+        config.put("model", geminiModelName);
+        config.put("provider", "Google Gemini");
+        config.put("status", "active");
+        config.put("supportedTypes", FUNCTION_TYPES);
+        config.put("supportedModels", AI_MODELS);
+        return config;
     }
 } 

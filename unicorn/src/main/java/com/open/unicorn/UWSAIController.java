@@ -177,4 +177,16 @@ public class UWSAIController {
         response.put("version", "1.0.0");
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/configuration")
+    public ResponseEntity<?> getAIConfiguration() {
+        try {
+            Map<String, Object> config = aiService.getAIConfiguration();
+            return ResponseEntity.ok(config);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
 } 
