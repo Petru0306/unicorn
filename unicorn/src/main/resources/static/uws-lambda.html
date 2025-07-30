@@ -84,6 +84,30 @@
             color: white;
         }
         
+        /* Resource limits styling */
+        .resource-limits-card {
+            border: 1px solid #e3e6f0;
+            border-radius: 0.35rem;
+        }
+        .resource-limits-card .card-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 1px solid #e3e6f0;
+            font-weight: 600;
+        }
+        .resource-input {
+            border: 1px solid #d1d3e2;
+            border-radius: 0.35rem;
+        }
+        .resource-input:focus {
+            border-color: #bac8f3;
+            box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+        }
+        .resource-info {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 1px solid #90caf9;
+            border-radius: 0.35rem;
+        }
+        
         /* Modal styles for non-Bootstrap modal */
         .modal {
             display: none;
@@ -151,6 +175,11 @@
                         ⚡ Execute
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="monitoring-tab" onclick="switchTab('monitoring')" type="button" role="tab">
+                        📊 Monitoring
+                    </button>
+                </li>
             </ul>
 
             <!-- Tab Content -->
@@ -183,6 +212,48 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        
+                                        <!-- Resource Limits Configuration -->
+                                        <div class="card mb-3 resource-limits-card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">⚙️ Resource Limits</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="mb-3">
+                                                            <label for="cpuLimit" class="form-label">CPU Limit (cores)</label>
+                                                            <input type="number" class="form-control resource-input" id="cpuLimit" min="1" max="8" value="1">
+                                                            <small class="form-text text-muted">1-8 CPU cores (default: 1)</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="mb-3">
+                                                            <label for="memoryLimit" class="form-label">Memory Limit (MB)</label>
+                                                            <input type="number" class="form-control resource-input" id="memoryLimit" min="128" max="8192" value="512">
+                                                            <small class="form-text text-muted">128-8192 MB (default: 512)</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="mb-3">
+                                                            <label for="timeoutLimit" class="form-label">Timeout (seconds)</label>
+                                                            <input type="number" class="form-control resource-input" id="timeoutLimit" min="1" max="300" value="30">
+                                                            <small class="form-text text-muted">1-300 seconds (default: 30)</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="alert alert-info resource-info">
+                                                    <small>
+                                                        <strong>Resource Limits Info:</strong><br>
+                                                        • CPU: Limits the number of CPU cores available to your function<br>
+                                                        • Memory: Sets maximum memory usage in megabytes<br>
+                                                        • Timeout: Maximum execution time before automatic termination<br>
+                                                        • These limits help prevent resource abuse and ensure fair usage
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
                                         <div class="mb-3">
                                             <label for="codeEditor" class="form-label">Source Code</label>
                                             <div id="codeEditor" class="editor-container"></div>
@@ -263,6 +334,106 @@
         </div>
     </div>
 
+    <!-- Monitoring Tab -->
+    <div class="tab-pane fade" id="monitoring" role="tabpanel">
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>📊 System Monitoring & Statistics</h5>
+                        <div>
+                            <button class="btn btn-primary btn-sm" onclick="loadStats()">Refresh Stats</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card bg-primary text-white mb-3">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Total Executions</h6>
+                                        <h3 id="totalExecutions">-</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-success text-white mb-3">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Success Rate</h6>
+                                        <h3 id="successRate">-</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card bg-info text-white mb-3">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Successful Executions</h6>
+                                        <h4 id="successfulExecutions">-</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-warning text-white mb-3">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Failed Executions</h6>
+                                        <h4 id="failedExecutions">-</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-secondary text-white mb-3">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Active Users</h6>
+                                        <h4 id="activeUsers">-</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6>System Health</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-2">
+                                            <strong>Cache Size:</strong> <span id="cacheSize">-</span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Rate Limit Entries:</strong> <span id="rateLimitMapSize">-</span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Last Updated:</strong> <span id="lastUpdated">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6>Rate Limits</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-2">
+                                            <strong>Max Requests/Minute:</strong> 30
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Max Requests/Hour:</strong> 1000
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Max Functions/User:</strong> 50
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Execution Logs Modal -->
     <div class="modal fade" id="logsModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -324,6 +495,12 @@
             if (tabName === 'functions') {
                 console.log('Loading functions for functions tab...')
                 loadFunctions()
+            }
+            
+            // Load stats if switching to monitoring tab
+            if (tabName === 'monitoring') {
+                console.log('Loading stats for monitoring tab...')
+                loadStats()
             }
         }
 
@@ -392,6 +569,9 @@
             const name = document.getElementById('functionName').value;
             const language = document.getElementById('language').value;
             const code = editor.getValue();
+            const cpuLimit = document.getElementById('cpuLimit').value;
+            const memoryLimit = document.getElementById('memoryLimit').value;
+            const timeoutLimit = document.getElementById('timeoutLimit').value;
 
             if (!name || !language || !code.trim()) {
                 alert('Please fill in all required fields');
@@ -407,14 +587,23 @@
                 body: JSON.stringify({
                     name: name,
                     language: language,
-                    code: code
+                    code: code,
+                    cpuLimit: parseInt(cpuLimit),
+                    memoryLimit: parseInt(memoryLimit),
+                    timeoutLimit: parseInt(timeoutLimit)
                 })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.id) {
                     alert('Function created successfully!');
-                    document.getElementById('createLambdaForm').reset();
+                    // Reset form fields
+                    document.getElementById('functionName').value = '';
+                    document.getElementById('language').value = '';
+                    document.getElementById('cpuLimit').value = '1';
+                    document.getElementById('memoryLimit').value = '512';
+                    document.getElementById('timeoutLimit').value = '30';
+                    document.getElementById('testInput').value = '{"name": "World", "number": 42}';
                     editor.setValue('// Write your function here\n// For JavaScript:\nconsole.log("Hello, World!");\n\n// For Python:\n# print("Hello, World!")');
                     loadFunctions();
                 } else {
@@ -432,6 +621,9 @@
             const language = document.getElementById('language').value;
             const code = editor.getValue();
             const input = document.getElementById('testInput').value;
+            const cpuLimit = document.getElementById('cpuLimit').value;
+            const memoryLimit = document.getElementById('memoryLimit').value;
+            const timeoutLimit = document.getElementById('timeoutLimit').value;
 
             if (!language || !code.trim()) {
                 alert('Please select a language and write some code');
@@ -462,7 +654,10 @@
                 body: JSON.stringify({
                     name: 'test-' + Date.now(),
                     language: language,
-                    code: code
+                    code: code,
+                    cpuLimit: parseInt(cpuLimit),
+                    memoryLimit: parseInt(memoryLimit),
+                    timeoutLimit: parseInt(timeoutLimit)
                 })
             })
             .then(response => response.json())
@@ -567,6 +762,7 @@
                             <tr>
                                 <th>Name</th>
                                 <th>Language</th>
+                                <th>Resource Limits</th>
                                 <th>Created</th>
                                 <th>Actions</th>
                             </tr>
@@ -576,10 +772,13 @@
 
             functions.forEach(func => {
                 const createdAt = new Date(func.createdAt).toLocaleString();
+                const resourceInfo = `CPU: ${func.cpuLimit || 1} | Memory: ${func.memoryLimit || 512}MB | Timeout: ${func.timeoutLimit || 30}s`;
+                
                 html += `
                     <tr>
                         <td><strong>${func.name}</strong></td>
                         <td><span class="language-badge">${func.language}</span></td>
+                        <td><small class="text-muted">${resourceInfo}</small></td>
                         <td>${createdAt}</td>
                         <td>
                             <button class="btn btn-sm btn-success" onclick="executeFunction(${func.id})">Execute</button>
@@ -951,6 +1150,45 @@
             localStorage.removeItem('jwtToken');
             alert('Logged out successfully!');
             window.location.href = '/index.html';
+        }
+
+        function loadStats() {
+            console.log('Loading execution statistics...')
+            
+            fetch('/api/lambdas/stats', {
+                headers: {
+                    'Authorization': 'Bearer ' + currentToken
+                }
+            })
+            .then(response => {
+                console.log('Stats response status:', response.status)
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status)
+                }
+                return response.json()
+            })
+            .then(data => {
+                console.log('Stats data:', data)
+                
+                // Update statistics display
+                document.getElementById('totalExecutions').textContent = data.totalExecutions || 0
+                document.getElementById('successfulExecutions').textContent = data.successfulExecutions || 0
+                document.getElementById('failedExecutions').textContent = data.failedExecutions || 0
+                document.getElementById('activeUsers').textContent = data.activeUsers || 0
+                document.getElementById('cacheSize').textContent = data.cacheSize || 0
+                document.getElementById('rateLimitMapSize').textContent = data.rateLimitMapSize || 0
+                
+                // Format success rate
+                const successRate = data.successRate || 0
+                document.getElementById('successRate').textContent = successRate.toFixed(1) + '%'
+                
+                // Update last updated timestamp
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleString()
+            })
+            .catch(error => {
+                console.error('Error loading stats:', error)
+                alert('Error loading statistics: ' + error.message)
+            })
         }
     </script>
 </body>

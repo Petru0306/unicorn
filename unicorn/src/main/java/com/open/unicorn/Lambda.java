@@ -29,12 +29,25 @@ public class Lambda {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    // Resource limits
+    @Column(name = "cpu_limit")
+    private Integer cpuLimit = 1; // CPU cores (default: 1)
+
+    @Column(name = "memory_limit")
+    private Integer memoryLimit = 512; // Memory in MB (default: 512MB)
+
+    @Column(name = "timeout_limit")
+    private Integer timeoutLimit = 30; // Timeout in seconds (default: 30s)
+
     @OneToMany(mappedBy = "lambda", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LambdaExecution> executions = new ArrayList<>();
 
     // Default constructor
     public Lambda() {
         this.createdAt = LocalDateTime.now();
+        this.cpuLimit = 1;
+        this.memoryLimit = 512;
+        this.timeoutLimit = 30;
     }
 
     // Constructor with parameters
@@ -44,6 +57,21 @@ public class Lambda {
         this.language = language;
         this.code = code;
         this.createdAt = LocalDateTime.now();
+        this.cpuLimit = 1;
+        this.memoryLimit = 512;
+        this.timeoutLimit = 30;
+    }
+
+    // Constructor with resource limits
+    public Lambda(User user, String name, String language, String code, Integer cpuLimit, Integer memoryLimit, Integer timeoutLimit) {
+        this.user = user;
+        this.name = name;
+        this.language = language;
+        this.code = code;
+        this.createdAt = LocalDateTime.now();
+        this.cpuLimit = cpuLimit != null ? cpuLimit : 1;
+        this.memoryLimit = memoryLimit != null ? memoryLimit : 512;
+        this.timeoutLimit = timeoutLimit != null ? timeoutLimit : 30;
     }
 
     // Getters and setters
@@ -93,6 +121,30 @@ public class Lambda {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Integer getCpuLimit() {
+        return cpuLimit;
+    }
+
+    public void setCpuLimit(Integer cpuLimit) {
+        this.cpuLimit = cpuLimit != null ? cpuLimit : 1;
+    }
+
+    public Integer getMemoryLimit() {
+        return memoryLimit;
+    }
+
+    public void setMemoryLimit(Integer memoryLimit) {
+        this.memoryLimit = memoryLimit != null ? memoryLimit : 512;
+    }
+
+    public Integer getTimeoutLimit() {
+        return timeoutLimit;
+    }
+
+    public void setTimeoutLimit(Integer timeoutLimit) {
+        this.timeoutLimit = timeoutLimit != null ? timeoutLimit : 30;
     }
 
     public List<LambdaExecution> getExecutions() {

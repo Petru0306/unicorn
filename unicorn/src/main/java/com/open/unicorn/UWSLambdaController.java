@@ -15,11 +15,26 @@ public class UWSLambdaController {
     private LambdaService lambdaService;
 
     @PostMapping
-    public ResponseEntity<?> createLambda(@RequestBody Map<String, String> request) {
+    public ResponseEntity<?> createLambda(@RequestBody Map<String, Object> request) {
         try {
-            String name = request.get("name");
-            String language = request.get("language");
-            String code = request.get("code");
+            String name = (String) request.get("name");
+            String language = (String) request.get("language");
+            String code = (String) request.get("code");
+            
+            // Parse resource limits with defaults
+            Integer cpuLimit = null;
+            Integer memoryLimit = null;
+            Integer timeoutLimit = null;
+            
+            if (request.get("cpuLimit") != null) {
+                cpuLimit = Integer.valueOf(request.get("cpuLimit").toString());
+            }
+            if (request.get("memoryLimit") != null) {
+                memoryLimit = Integer.valueOf(request.get("memoryLimit").toString());
+            }
+            if (request.get("timeoutLimit") != null) {
+                timeoutLimit = Integer.valueOf(request.get("timeoutLimit").toString());
+            }
 
             if (name == null || language == null || code == null) {
                 return ResponseEntity.badRequest().body("Missing required fields: name, language, code");
@@ -29,13 +44,27 @@ public class UWSLambdaController {
                 return ResponseEntity.badRequest().body("Language must be 'javascript' or 'python'");
             }
 
-            Lambda lambda = lambdaService.createLambda(name, language, code);
+            // Validate resource limits
+            if (cpuLimit != null && (cpuLimit < 1 || cpuLimit > 8)) {
+                return ResponseEntity.badRequest().body("CPU limit must be between 1 and 8 cores");
+            }
+            if (memoryLimit != null && (memoryLimit < 128 || memoryLimit > 8192)) {
+                return ResponseEntity.badRequest().body("Memory limit must be between 128 and 8192 MB");
+            }
+            if (timeoutLimit != null && (timeoutLimit < 1 || timeoutLimit > 300)) {
+                return ResponseEntity.badRequest().body("Timeout limit must be between 1 and 300 seconds");
+            }
+
+            Lambda lambda = lambdaService.createLambda(name, language, code, cpuLimit, memoryLimit, timeoutLimit);
             
             Map<String, Object> response = new HashMap<>();
             response.put("id", lambda.getId());
             response.put("name", lambda.getName());
             response.put("language", lambda.getLanguage());
             response.put("createdAt", lambda.getCreatedAt());
+            response.put("cpuLimit", lambda.getCpuLimit());
+            response.put("memoryLimit", lambda.getMemoryLimit());
+            response.put("timeoutLimit", lambda.getTimeoutLimit());
             
             return ResponseEntity.ok(response);
             
@@ -78,6 +107,9 @@ public class UWSLambdaController {
                     map.put("name", lambda.getName());
                     map.put("language", lambda.getLanguage());
                     map.put("createdAt", lambda.getCreatedAt());
+                    map.put("cpuLimit", lambda.getCpuLimit());
+                    map.put("memoryLimit", lambda.getMemoryLimit());
+                    map.put("timeoutLimit", lambda.getTimeoutLimit());
                     return map;
                 })
                 .toList();
@@ -123,6 +155,17 @@ public class UWSLambdaController {
             
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error retrieving logs: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<?> getExecutionStats() {
+        try {
+            Map<String, Object> stats = lambdaService.getExecutionStats();
+            return ResponseEntity.ok(stats);
+            
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error retrieving stats: " + e.getMessage());
         }
     }
 } 

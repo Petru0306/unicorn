@@ -338,6 +338,37 @@
                     </div>
                 </div>
             </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>🌐 UWS-DNS Domain Name Service</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="lead">Manage DNS zones and records for your domains with secure JWT authentication</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Features:</h6>
+                                    <ul>
+                                        <li>Create and manage DNS zones (e.g., myproject.uws)</li>
+                                        <li>Add DNS records: A, AAAA, CNAME, TXT with custom TTL</li>
+                                        <li>Edit and delete DNS records with confirmation</li>
+                                        <li>User isolation - each user manages their own zones</li>
+                                        <li>Real-time DNS record management and validation</li>
+                                        <li>Clean and intuitive interface for DNS administration</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <a href="/uws-dns.html" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-globe"></i> Access UWS-DNS
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
                                     </a>
                                 </div>
                             </div>
@@ -592,6 +623,22 @@
                                             <td>Get available function types</td>
                                             <td><span class="badge bg-success">Active</span></td>
                                         </tr>
+                                        <tr>
+                                            <td><code>/api/dns/zones</code></td>
+                                            <td>GET/POST</td>
+                                            <td>DNS zone management</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/dns/zones/{id}/records</code></td>
+                                            <td>GET/POST</td>
+                                            <td>DNS record operations</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/dns/records/{id}</code></td>
+                                            <td>GET/PUT/DELETE</td>
+                                            <td>DNS record management</td>
                                             <td><span class="badge bg-success">Active</span></td>
                                         </tr>
                                     </tbody>

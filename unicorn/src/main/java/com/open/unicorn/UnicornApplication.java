@@ -33,10 +33,15 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.PreDestroy;
 
 @SpringBootApplication
 @EnableScheduling
 public class UnicornApplication {
+
+	@Autowired
+	private LambdaService lambdaService;
 
 	@RestController
 	@RequestMapping("/api/auth")
@@ -116,7 +121,7 @@ public class UnicornApplication {
 				.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
 					.requestMatchers("/api/auth/**").permitAll()
-					.requestMatchers("/", "/index.html", "/login.html", "/register.html", "/dashboard.html", "/uws-s3.html", "/uws-compute.html", "/uws-lambda.html", "/uws-rdb.html", "/uws-sqs.html", "/uws-nosql.html", "/uws-secrets.html", "/uws-ai.html", "/css/**", "/js/**", "/images/**").permitAll()
+					.requestMatchers("/", "/index.html", "/login.html", "/register.html", "/dashboard.html", "/uws-s3.html", "/uws-compute.html", "/uws-lambda.html", "/uws-rdb.html", "/uws-sqs.html", "/uws-nosql.html", "/uws-secrets.html", "/uws-ai.html", "/uws-dns.html", "/css/**", "/js/**", "/images/**").permitAll()
 					.requestMatchers("/h2-console/**").permitAll()
 					.requestMatchers("/api/uws-s3/**").authenticated()
 					.requestMatchers("/api/uws-compute/**").authenticated()
@@ -126,6 +131,7 @@ public class UnicornApplication {
 					.requestMatchers("/api/nosql/**").authenticated()
 					.requestMatchers("/api/secrets/**").authenticated()
 					.requestMatchers("/api/ai/**").authenticated()
+					.requestMatchers("/api/dns/**").authenticated()
 					.anyRequest().authenticated()
 				)
 				.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())) // For H2 console
@@ -146,6 +152,15 @@ public class UnicornApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(UnicornApplication.class, args);
+	}
+
+	@PreDestroy
+	public void onShutdown() {
+		System.out.println("Shutting down Unicorn application...");
+		if (lambdaService != null) {
+			lambdaService.shutdown();
+		}
+		System.out.println("Unicorn application shutdown complete.");
 	}
 
 	public static class JWTAuthorizationFilter extends OncePerRequestFilter {
