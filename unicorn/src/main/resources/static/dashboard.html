@@ -247,6 +247,37 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
+                            <h5>🔐 UWS-Secrets Manager</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="lead">Secure secret management with AES-256 encryption and JWT authentication</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Features:</h6>
+                                    <ul>
+                                        <li>Create and manage secrets with strong AES-256 encryption</li>
+                                        <li>Secure secret storage with automatic encryption/decryption</li>
+                                        <li>Secret versioning and expiration date management</li>
+                                        <li>User isolation - secrets belong only to authenticated users</li>
+                                        <li>Modern UI with copy-to-clipboard functionality</li>
+                                        <li>Real-time statistics and expiration monitoring</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <a href="/uws-secrets.html" class="btn btn-danger btn-lg">
+                                        <i class="fas fa-key"></i> Access UWS-Secrets Manager
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
                             <h5>🔑 JWT Token Information</h5>
                         </div>
                         <div class="card-body">
@@ -355,6 +386,42 @@
                                             <td><code>/api/lambdas/{id}</code></td>
                                             <td>DELETE</td>
                                             <td>Delete lambda function</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/secrets</code></td>
+                                            <td>POST</td>
+                                            <td>Create new secret</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/secrets</code></td>
+                                            <td>GET</td>
+                                            <td>List user secrets (metadata only)</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/secrets/{id}</code></td>
+                                            <td>GET</td>
+                                            <td>Get secret with decrypted value</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/secrets/{id}</code></td>
+                                            <td>PUT</td>
+                                            <td>Update secret</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/secrets/{id}</code></td>
+                                            <td>DELETE</td>
+                                            <td>Delete secret</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>/api/secrets/stats</code></td>
+                                            <td>GET</td>
+                                            <td>Get secret statistics</td>
                                             <td><span class="badge bg-success">Active</span></td>
                                         </tr>
                                     </tbody>
