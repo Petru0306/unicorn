@@ -2,6 +2,7 @@ package com.open.unicorn;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import java.util.ArrayList;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -34,6 +35,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 
 @SpringBootApplication
+@EnableScheduling
 public class UnicornApplication {
 
 	@RestController
@@ -114,13 +116,15 @@ public class UnicornApplication {
 				.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
 					.requestMatchers("/api/auth/**").permitAll()
-					.requestMatchers("/", "/index.html", "/login.html", "/register.html", "/dashboard.html", "/uws-s3.html", "/uws-compute.html", "/css/**", "/js/**", "/images/**").permitAll()
+					.requestMatchers("/", "/index.html", "/login.html", "/register.html", "/dashboard.html", "/uws-s3.html", "/uws-compute.html", "/uws-rdb.html", "/uws-sqs.html", "/css/**", "/js/**", "/images/**").permitAll()
 					.requestMatchers("/h2-console/**").permitAll()
 					.requestMatchers("/api/uws-s3/**").authenticated()
 					.requestMatchers("/api/uws-compute/**").authenticated()
+					.requestMatchers("/api/uws-rdb/**").authenticated()
+					.requestMatchers("/api/uws-sqs/**").authenticated()
 					.anyRequest().authenticated()
 				)
-				.headers(headers -> headers.frameOptions().disable()) // For H2 console
+				.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())) // For H2 console
 				.addFilterBefore(new JWTAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class);
 			
 			return http.build();

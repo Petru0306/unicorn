@@ -17,6 +17,9 @@ public class UWSComputeController {
     @Autowired
     private ContainerRepository containerRepository;
 
+    @Autowired
+    private DockerService dockerService;
+
     // Instance size configurations
     private static final Map<String, Map<String, Integer>> INSTANCE_SIZES = Map.of(
         "micro", Map.of("cpu", 1, "memory", 512, "maxInstances", 5),
@@ -82,8 +85,22 @@ public class UWSComputeController {
                 container.setSchedule(schedule);
             }
             
-            // Simulate container start
-            container.setStatus("RUNNING");
+            // Create real Docker container
+            try {
+                if (dockerService.isDockerAvailable()) {
+                    String dockerContainerId = dockerService.createContainer(imageName, instanceId, port);
+                    container.setDockerContainerId(dockerContainerId);
+                    dockerService.startContainer(dockerContainerId);
+                    container.setStatus("RUNNING");
+                } else {
+                    // Fallback to simulation if Docker is not available
+                    container.setStatus("RUNNING");
+                }
+            } catch (Exception e) {
+                // Fallback to simulation if Docker fails
+                container.setStatus("RUNNING");
+            }
+            
             containerRepository.save(container);
 
             Map<String, Object> response = new HashMap<>();
@@ -206,7 +223,16 @@ public class UWSComputeController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Container is already stopped"));
             }
 
-            // Simulate container stop
+            // Stop real Docker container
+            try {
+                if (dockerService.isDockerAvailable() && container.getDockerContainerId() != null) {
+                    dockerService.stopContainer(container.getDockerContainerId());
+                }
+            } catch (Exception e) {
+                // Continue even if Docker operation fails
+            }
+
+            // Update status
             container.setStatus("STOPPED");
             container.setUpdatedAt(LocalDateTime.now());
             containerRepository.save(container);
@@ -248,7 +274,16 @@ public class UWSComputeController {
                     .body(Map.of("error", "Maximum number of running containers reached for " + container.getInstanceSize() + " instances"));
             }
 
-            // Simulate container start
+            // Start real Docker container
+            try {
+                if (dockerService.isDockerAvailable() && container.getDockerContainerId() != null) {
+                    dockerService.startContainer(container.getDockerContainerId());
+                }
+            } catch (Exception e) {
+                // Continue even if Docker operation fails
+            }
+
+            // Update status
             container.setStatus("RUNNING");
             container.setUpdatedAt(LocalDateTime.now());
             containerRepository.save(container);
@@ -275,6 +310,15 @@ public class UWSComputeController {
             if (!container.getOwnerEmail().equals(userEmail)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Access denied"));
+            }
+
+            // Delete real Docker container
+            try {
+                if (dockerService.isDockerAvailable() && container.getDockerContainerId() != null) {
+                    dockerService.deleteContainer(container.getDockerContainerId());
+                }
+            } catch (Exception e) {
+                // Continue even if Docker operation fails
             }
 
             containerRepository.delete(container);
@@ -329,6 +373,21 @@ public class UWSComputeController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to update schedule: " + e.getMessage()));
+        }
+    }
+
+    // Get Docker status
+    @GetMapping("/docker-status")
+    public ResponseEntity<Map<String, Object>> getDockerStatus() {
+        try {
+            boolean isAvailable = dockerService.isDockerAvailable();
+            Map<String, Object> response = new HashMap<>();
+            response.put("dockerAvailable", isAvailable);
+            response.put("message", isAvailable ? "Docker is available" : "Docker is not available - using simulation mode");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to check Docker status: " + e.getMessage()));
         }
     }
 } 
