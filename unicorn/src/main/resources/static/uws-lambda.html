@@ -720,7 +720,7 @@
         require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.45.0/min/vs' } });
         require(['vs/editor/editor.main'], function () {
             editor = monaco.editor.create(document.getElementById('codeEditor'), {
-                value: '// Write your function here\n// For JavaScript:\nconsole.log("Hello, World!");\n\n// For Python:\n# print("Hello, World!")',
+                value: 'console.log("Hello, World!");',
                 language: 'javascript',
                 theme: 'vs-dark',
                 automaticLayout: true,
@@ -808,7 +808,7 @@
                     document.getElementById('memoryLimit').value = '512';
                     document.getElementById('timeoutLimit').value = '30';
                     document.getElementById('testInput').value = '{"name": "World", "number": 42}';
-                    editor.setValue('// Write your function here\n// For JavaScript:\nconsole.log("Hello, World!");\n\n// For Python:\n# print("Hello, World!")');
+                    editor.setValue('console.log("Hello, World!");');
                     loadFunctions();
                 } else {
                     alert('Error creating function: ' + data);
@@ -1236,10 +1236,10 @@
                 const model = editor.getModel();
                 if (language === 'javascript') {
                     monaco.editor.setModelLanguage(model, 'javascript');
-                    editor.setValue('// JavaScript function\nconsole.log("Hello, World!");\n\n// Access input data:\nconst input = JSON.parse(process.env.LAMBDA_INPUT || "{}");\nconsole.log("Input:", input);');
+                    editor.setValue('console.log("Hello, World!");');
                 } else if (language === 'python') {
                     monaco.editor.setModelLanguage(model, 'python');
-                    editor.setValue('# Python function\nprint("Hello, World!")\n\n# Access input data:\nimport json\nimport sys\nimport ast\nimport os\n\n# Get input from environment variable (more reliable than command line args)\nraw_input = os.environ.get("LAMBDA_INPUT", "{}")\nprint("Raw input from env:", raw_input)\n\ntry:\n    # Try to parse as JSON first\n    input_data = json.loads(raw_input)\n    print("Input (JSON):", input_data)\nexcept json.JSONDecodeError as e:\n    print("JSON decode error:", e)\n    try:\n        # If JSON fails, try to parse as Python literal (handles single quotes)\n        input_data = ast.literal_eval(raw_input)\n        print("Input (Python literal):", input_data)\n    except Exception as e2:\n        # Show raw input for debugging\n        print("Raw input:", raw_input)\n        print("Literal eval error:", e2)\n        print("Error parsing input, using empty dict")\n        input_data = {}\n        print("Using empty input data")');
+                    editor.setValue('print("Hello, World!")');
                 }
             }
         });
