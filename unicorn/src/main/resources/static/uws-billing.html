@@ -9,8 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --billing-primary: #ff6b35;
-            --billing-secondary: #f7931e;
+            --billing-primary: #6f42c1;
+            --billing-secondary: #8e44ad;
             --billing-success: #28a745;
             --billing-warning: #ffc107;
             --billing-danger: #dc3545;
@@ -22,6 +22,12 @@
             min-height: 100vh;
             overflow-x: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+
+        body::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
         }
 
         /* Sidebar Styles */
@@ -94,6 +100,27 @@
             margin-left: 280px;
             min-height: 100vh;
             padding: 2rem;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #6f42c1 #f1f1f1;
+        }
+
+        .main-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .main-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .main-content::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #6f42c1, #8e44ad);
+            border-radius: 10px;
+        }
+
+        .main-content::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #8e44ad, #6f42c1);
         }
 
         .top-navbar {
@@ -143,12 +170,20 @@
         }
 
         .billing-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.98);
             border-radius: 20px;
             padding: 2rem;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
             margin-bottom: 2rem;
             backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .billing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(111, 66, 193, 0.15);
+            border-color: #6f42c1;
         }
 
         .billing-header {
@@ -158,19 +193,28 @@
             padding: 2rem;
             margin-bottom: 2rem;
             text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .billing-header:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(111, 66, 193, 0.3);
         }
 
         .stats-card {
             background: white;
             border-radius: 15px;
             padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
             border-left: 4px solid var(--billing-primary);
+            border: 2px solid transparent;
         }
 
         .stats-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(111, 66, 193, 0.2);
+            border-color: #6f42c1;
         }
 
         .stats-card.success {
@@ -198,13 +242,43 @@
         .btn-billing:hover {
             background: linear-gradient(45deg, var(--billing-secondary), var(--billing-primary));
             color: white;
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(111, 66, 193, 0.3);
         }
 
+        /* Chart improvements */
         .chart-container {
             position: relative;
             height: 400px;
             margin: 1rem 0;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .chart-container:hover {
+            box-shadow: 0 12px 35px rgba(111, 66, 193, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Custom scrollbar for charts */
+        .chart-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chart-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .chart-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #6f42c1, #8e44ad);
+            border-radius: 10px;
+        }
+
+        .chart-container::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #8e44ad, #6f42c1);
         }
 
         .alert-card {
@@ -213,6 +287,14 @@
             padding: 1.5rem;
             margin-bottom: 1rem;
             border-left: 4px solid var(--billing-warning);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .alert-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 25px rgba(111, 66, 193, 0.15);
+            border-color: #6f42c1;
         }
 
         .alert-card.triggered {
@@ -224,20 +306,77 @@
             background: white;
             border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            max-height: 300px;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-table:hover {
+            box-shadow: 0 12px 35px rgba(111, 66, 193, 0.2);
+        }
+
+        .pricing-table::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .pricing-table::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .pricing-table::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #6f42c1, #8e44ad);
+            border-radius: 10px;
+        }
+
+        .pricing-table::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #8e44ad, #6f42c1);
         }
 
         .pricing-table th {
             background: linear-gradient(45deg, var(--billing-primary), var(--billing-secondary));
             color: white;
             border: none;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
+        .pricing-table tr {
+            transition: all 0.3s ease;
+        }
+
+        .pricing-table tr:hover {
+            background: linear-gradient(135deg, rgba(111, 66, 193, 0.05), rgba(142, 68, 173, 0.05));
+            transform: scale(1.01);
+        }
+
+        /* Enhanced time filter */
         .time-filter {
             background: white;
-            border-radius: 10px;
-            padding: 1rem;
+            border-radius: 15px;
+            padding: 1.5rem;
             margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .time-filter:hover {
+            box-shadow: 0 12px 35px rgba(111, 66, 193, 0.15);
+            border-color: #6f42c1;
+            transform: translateY(-2px);
+        }
+
+        .time-filter h5 {
+            color: #6f42c1;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .time-filter .btn-group {
+            gap: 0.5rem;
         }
 
         .cost-badge {
@@ -246,6 +385,12 @@
             padding: 0.5rem 1rem;
             border-radius: 20px;
             font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .cost-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(111, 66, 193, 0.3);
         }
 
         .service-icon {
@@ -258,17 +403,23 @@
             color: white;
             font-size: 1.2rem;
             margin-right: 1rem;
+            transition: all 0.3s ease;
         }
 
-        .service-s3 { background: linear-gradient(45deg, #ff6b35, #f7931e); }
-        .service-lambda { background: linear-gradient(45deg, #667eea, #764ba2); }
-        .service-compute { background: linear-gradient(45deg, #28a745, #20c997); }
-        .service-rdb { background: linear-gradient(45deg, #17a2b8, #6f42c1); }
-        .service-nosql { background: linear-gradient(45deg, #fd7e14, #e83e8c); }
-        .service-sqs { background: linear-gradient(45deg, #6f42c1, #e83e8c); }
-        .service-secrets { background: linear-gradient(45deg, #dc3545, #fd7e14); }
-        .service-ai { background: linear-gradient(45deg, #20c997, #17a2b8); }
-        .service-dns { background: linear-gradient(45deg, #6c757d, #495057); }
+        .service-icon:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 5px 15px rgba(111, 66, 193, 0.3);
+        }
+
+        .service-s3 { background: linear-gradient(45deg, #6f42c1, #8e44ad); }
+        .service-lambda { background: linear-gradient(45deg, #6f42c1, #8e44ad); }
+        .service-compute { background: linear-gradient(45deg, #6f42c1, #8e44ad); }
+        .service-rdb { background: linear-gradient(45deg, #6f42c1, #8e44ad); }
+        .service-nosql { background: linear-gradient(45deg, #6f42c1, #8e44ad); }
+        .service-sqs { background: linear-gradient(45deg, #6f42c1, #8e44ad); }
+        .service-secrets { background: linear-gradient(45deg, #6f42c1, #8e44ad); }
+        .service-ai { background: linear-gradient(45deg, #6f42c1, #8e44ad); }
+        .service-dns { background: linear-gradient(45deg, #6f42c1, #8e44ad); }
 
         .loading {
             display: none;
@@ -282,6 +433,66 @@
 
         .spinner-border {
             color: var(--billing-primary);
+        }
+
+        /* Table hover effects */
+        .table-hover tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        .table-hover tbody tr:hover {
+            background: linear-gradient(135deg, rgba(111, 66, 193, 0.05), rgba(142, 68, 173, 0.05));
+            transform: scale(1.01);
+            box-shadow: 0 5px 15px rgba(111, 66, 193, 0.1);
+        }
+
+        /* Button hover effects */
+        .btn-outline-primary {
+            transition: all 0.3s ease;
+            border-radius: 25px;
+            padding: 8px 20px;
+            font-weight: 500;
+            border: 2px solid #6f42c1;
+            color: #6f42c1;
+            background: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-outline-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #6f42c1, #8e44ad);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        .btn-outline-primary:hover {
+            background: transparent;
+            border-color: #6f42c1;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(111, 66, 193, 0.3);
+            color: white;
+        }
+
+        .btn-outline-primary:hover::before {
+            left: 0;
+        }
+
+        .btn-outline-primary.active {
+            background: linear-gradient(45deg, #6f42c1, #8e44ad);
+            border-color: #6f42c1;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(111, 66, 193, 0.4);
+        }
+
+        .btn-outline-primary.active::before {
+            left: 0;
         }
         
         /* Cursor Effects */
@@ -331,6 +542,94 @@
             pointer-events: none;
             z-index: 9997;
             animation: trailFade 0.8s ease-out forwards;
+        }
+
+        /* Table improvements */
+        .table-responsive {
+            overflow-x: hidden;
+            overflow-y: visible;
+        }
+
+        .table-responsive::-webkit-scrollbar {
+            display: none;
+        }
+
+        .table-responsive {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Service pricing specific scroll */
+        .pricing-table-container {
+            max-height: 300px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .pricing-table-container:hover {
+            box-shadow: 0 12px 35px rgba(111, 66, 193, 0.2);
+        }
+
+        .pricing-table-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .pricing-table-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .pricing-table-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #6f42c1, #8e44ad);
+            border-radius: 10px;
+        }
+
+        .pricing-table-container::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #8e44ad, #6f42c1);
+        }
+
+        .pricing-table {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 0;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-table th {
+            background: linear-gradient(45deg, var(--billing-primary), var(--billing-secondary));
+            color: white;
+            border: none;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .pricing-table tr {
+            transition: all 0.3s ease;
+        }
+
+        .pricing-table tr:hover {
+            background: linear-gradient(135deg, rgba(111, 66, 193, 0.05), rgba(142, 68, 173, 0.05));
+            transform: scale(1.01);
+        }
+
+        /* Monthly billing table improvements */
+        .monthly-billing-container {
+            overflow-x: hidden;
+            overflow-y: visible;
+        }
+
+        .monthly-billing-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .monthly-billing-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
@@ -433,12 +732,6 @@
                 <h4 class="mb-0">UWS-Billing & Cost Management</h4>
             </div>
             <div>
-                <button class="btn btn-billing me-2" onclick="testBilling()">
-                    <i class="fas fa-flask"></i> Test Billing
-                </button>
-                <button class="btn btn-billing me-2" onclick="generateSampleData()">
-                    <i class="fas fa-database"></i> Generate Sample Data
-                </button>
                 <button class="btn btn-outline-danger" onclick="logout()">Logout</button>
             </div>
         </div>
@@ -556,7 +849,7 @@
             <div class="col-md-8">
                 <div class="billing-card">
                     <h5><i class="fas fa-calendar-alt"></i> Monthly Billing Overview</h5>
-                    <div class="table-responsive">
+                    <div class="table-responsive monthly-billing-container">
                         <table class="table table-hover">
                             <thead>
                                 <tr>
@@ -591,7 +884,7 @@
         <!-- Pricing Information -->
         <div class="billing-card">
             <h5><i class="fas fa-tags"></i> Service Pricing</h5>
-            <div class="table-responsive">
+            <div class="pricing-table-container">
                 <table class="table pricing-table">
                     <thead>
                         <tr>
@@ -938,8 +1231,8 @@
                     datasets: [{
                         label: 'Cost ($)',
                         data: costs,
-                        borderColor: '#ff6b35',
-                        backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                        borderColor: '#6f42c1',
+                        backgroundColor: 'rgba(111, 66, 193, 0.1)',
                         tension: 0.4,
                         fill: true
                     }]
@@ -984,7 +1277,7 @@
                     datasets: [{
                         data: costs,
                         backgroundColor: [
-                            '#ff6b35', '#667eea', '#28a745', '#17a2b8',
+                            '#6f42c1', '#8e44ad', '#28a745', '#17a2b8',
                             '#fd7e14', '#6f42c1', '#dc3545', '#20c997', '#6c757d'
                         ]
                     }]
@@ -1109,57 +1402,9 @@
             }
         }
 
-        // Test billing integration
-        async function testBilling() {
-            try {
-                const token = localStorage.getItem('jwtToken');
-                const response = await fetch('/api/billing/test-billing', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
 
-                const result = await response.json();
-                if (result.success) {
-                    alert('Test billing event recorded successfully! Check the billing dashboard for the new event.');
-                    loadDashboardData();
-                }
-            } catch (error) {
-                console.error('Error testing billing:', error);
-                alert('Failed to test billing: ' + error.message);
-            }
-        }
 
-        // Generate sample data
-        async function generateSampleData() {
-            try {
-                const token = localStorage.getItem('jwtToken');
-                const response = await fetch('/api/billing/generate-sample-data', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const result = await response.json();
-                if (result.success) {
-                    alert('Sample billing data generated successfully!');
-                    loadDashboardData();
-                }
-            } catch (error) {
-                console.error('Error generating sample data:', error);
-                alert('Failed to generate sample data: ' + error.message);
-            }
-        }
 
         // Utility functions
         function formatCurrency(amount) {
