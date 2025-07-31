@@ -12,7 +12,13 @@ from pathlib import Path
 SIDEBAR_HTML = '''    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <a href="/dashboard.html" class="sidebar-brand">🦄 Unicorn</a>
+            <a href="/dashboard.html" class="sidebar-brand">
+                <div class="brand-logo">🦄</div>
+                <div class="brand-text">
+                    <div class="brand-title">UNICORN</div>
+                    <div class="brand-subtitle">WEB SERVICES</div>
+                </div>
+            </a>
         </div>
         <nav class="sidebar-nav">
             <div class="nav-item">
@@ -132,10 +138,36 @@ SIDEBAR_CSS = '''        /* Sidebar Styles */
         }
         
         .sidebar-brand {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #667eea;
+            display: flex;
+            align-items: center;
             text-decoration: none;
+            gap: 0.5rem;
+        }
+        
+        .brand-logo {
+            font-size: 2rem;
+        }
+        
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .brand-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #4a4afb;
+            line-height: 1;
+            letter-spacing: 0.5px;
+        }
+        
+        .brand-subtitle {
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #4a4afb;
+            line-height: 1;
+            letter-spacing: 0.3px;
         }
         
         .sidebar-nav {

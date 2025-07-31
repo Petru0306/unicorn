@@ -120,7 +120,7 @@ public class UnicornApplication {
 				.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
 					.requestMatchers("/api/auth/**").permitAll()
-					.requestMatchers("/", "/index.html", "/login.html", "/register.html", "/dashboard.html", "/uws-s3.html", "/uws-compute.html", "/uws-lambda.html", "/uws-rdb.html", "/uws-sqs.html", "/uws-nosql.html", "/uws-secrets.html", "/uws-ai.html", "/uws-dns.html", "/uws-monitoring.html", "/uws-billing.html", "/uws-iam.html", "/css/**", "/js/**", "/images/**").permitAll()
+					.requestMatchers("/", "/index.html", "/login.html", "/register.html", "/dashboard.html", "/uws-s3.html", "/uws-compute.html", "/uws-lambda.html", "/uws-rdb.html", "/uws-sqs.html", "/uws-nosql.html", "/uws-secrets.html", "/uws-ai.html", "/uws-dns.html", "/uws-monitoring.html", "/uws-billing.html", "/uws-iam.html", "/css/**", "/js/**", "/images/**", "/unicornicon.png").permitAll()
 					.requestMatchers("/h2-console/**").permitAll()
 					.requestMatchers("/api/uws-s3/**").authenticated()
 					.requestMatchers("/api/uws-compute/**").authenticated()

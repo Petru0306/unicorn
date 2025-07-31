@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UWS-Billing Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -21,9 +24,48 @@
             background: #ffffff;
             min-height: 100vh;
             overflow-x: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Poppins', sans-serif;
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none; /* IE and Edge */
+        }
+
+        /* Headings - Montserrat */
+        h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+        }
+
+        /* Brand title and subtitle - Montserrat */
+        .brand-title, .brand-subtitle {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* Navigation links - Poppins */
+        .nav-link {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Button text - Poppins */
+        .btn, .btn-billing {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Table headers - Montserrat */
+        .table th {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+        }
+
+        /* Modal titles - Montserrat */
+        .modal-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+        }
+
+        /* Form labels - Montserrat */
+        .form-label {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 500;
         }
 
         body::-webkit-scrollbar {
@@ -52,10 +94,40 @@
         }
 
         .sidebar-brand {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #667eea;
+            display: flex;
+            align-items: center;
             text-decoration: none;
+            gap: 0.5rem;
+        }
+
+        .brand-logo {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .brand-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #4a4afb;
+            line-height: 1;
+            letter-spacing: 0.5px;
+        }
+
+        .brand-subtitle {
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #4a4afb;
+            line-height: 1;
+            letter-spacing: 0.3px;
         }
 
         .sidebar-nav {
@@ -420,6 +492,7 @@
         .service-secrets { background: linear-gradient(45deg, #6f42c1, #8e44ad); }
         .service-ai { background: linear-gradient(45deg, #6f42c1, #8e44ad); }
         .service-dns { background: linear-gradient(45deg, #6f42c1, #8e44ad); }
+        .service-iam { background: linear-gradient(45deg, #d299c2, #fef9d7); }
 
         .loading {
             display: none;
@@ -637,7 +710,13 @@
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <a href="/dashboard.html" class="sidebar-brand">🦄 Unicorn</a>
+            <a href="/dashboard.html" class="sidebar-brand">
+                <img src="/unicornicon.png?v=1" alt="Unicorn Logo" class="brand-logo">
+                <div class="brand-text">
+                    <div class="brand-title">UNICORN</div>
+                    <div class="brand-subtitle">WEB SERVICES</div>
+                </div>
+            </a>
         </div>
         <nav class="sidebar-nav">
             <div class="nav-item">
@@ -941,6 +1020,7 @@
                                 <option value="Secrets Manager">Secrets Manager</option>
                                 <option value="AI Service">AI Service</option>
                                 <option value="DNS Service">DNS Service</option>
+                                <option value="UWS-IAM">UWS-IAM</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -1444,7 +1524,8 @@
                 'SQS': 'sqs',
                 'Secrets Manager': 'secrets',
                 'AI Service': 'ai',
-                'DNS Service': 'dns'
+                'DNS Service': 'dns',
+                'UWS-IAM': 'iam'
             };
             return serviceMap[service] || 's3';
         }
@@ -1459,7 +1540,8 @@
                 'SQS': 'fa-envelope',
                 'Secrets Manager': 'fa-key',
                 'AI Service': 'fa-brain',
-                'DNS Service': 'fa-globe'
+                'DNS Service': 'fa-globe',
+                'UWS-IAM': 'fa-users-cog'
             };
             return iconMap[service] || 'fa-cog';
         }
@@ -1481,6 +1563,12 @@
                     'request': 'Function invocations',
                     'duration_ms': 'Duration per 100ms',
                     'memory_gb': 'Memory per GB-second'
+                },
+                'UWS-IAM': {
+                    'user': 'IAM users per month',
+                    'role': 'IAM roles per month',
+                    'policy': 'IAM policies per month',
+                    'access_key': 'Access keys per month'
                 }
                 // Add more descriptions as needed
             };

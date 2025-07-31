@@ -119,6 +119,10 @@ public class MonitoringAspect {
             return "UWS-Secrets";
         } else if (className.contains("DNSController")) {
             return "UWS-DNS";
+        } else if (className.contains("IAMController")) {
+            return "UWS-IAM";
+        } else if (className.contains("BillingController")) {
+            return "UWS-Billing";
         } else if (className.contains("MonitoringController")) {
             return "UWS-Monitoring";
         } else {
