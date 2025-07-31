@@ -972,6 +972,13 @@
                         </div>
                     </div>
                     
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4><i class="fas fa-table"></i> Custom Tables</h4>
+                        <button type="button" class="btn btn-monitoring" onclick="showCreateCustomTableModal()">
+                            <i class="fas fa-plus"></i> Create New Table
+                        </button>
+                    </div>
+                    
                     <div id="customTablesContainer">
                         <!-- Custom tables will be populated here -->
                     </div>
@@ -1854,12 +1861,30 @@
                 data: null
             };
 
-            customTables.push(customTable);
-            await loadCustomTableData(customTable);
-            renderCustomTables();
-            
-            bootstrap.Modal.getInstance(document.getElementById('createCustomTableModal')).hide();
-            document.getElementById('customTableForm').reset();
+            try {
+                customTables.push(customTable);
+                await loadCustomTableData(customTable);
+                renderCustomTables();
+                
+                // Close modal and reset form
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createCustomTableModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                
+                // Reset form
+                const form = document.getElementById('customTableForm');
+                if (form) {
+                    form.reset();
+                }
+                
+                // Show success message
+                showResult(`Custom table "${tableName}" created successfully!`, 'success');
+                
+            } catch (error) {
+                console.error('Error creating custom table:', error);
+                showResult('Error creating custom table: ' + error.message, 'danger');
+            }
         }
 
         // Load data for custom table
@@ -2214,6 +2239,26 @@
                 }
             });
         });
+
+        // Show result message
+        function showResult(message, type) {
+            const resultsContainer = document.getElementById('resultsContainer');
+            if (resultsContainer) {
+                const alertClass = type === 'success' ? 'alert-success' : 
+                                 type === 'danger' ? 'alert-danger' : 
+                                 type === 'warning' ? 'alert-warning' : 'alert-info';
+                
+                resultsContainer.innerHTML = `
+                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+            } else {
+                // Fallback to console if results container doesn't exist
+                console.log(`${type.toUpperCase()}: ${message}`);
+            }
+        }
 
         // Logout function
         function logout() {
