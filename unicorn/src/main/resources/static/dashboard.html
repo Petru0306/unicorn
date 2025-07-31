@@ -8,9 +8,10 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #ffffff;
             min-height: 100vh;
             overflow-x: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         /* Sidebar Styles */
@@ -97,31 +98,183 @@
             align-items: center;
         }
         
-        .dashboard-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 2rem;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-        
         .welcome-section {
             background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
-            border-radius: 15px;
+            border-radius: 20px;
             padding: 2rem;
             margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
         }
         
-        .stats-card {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
+        .welcome-section h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
         }
         
-        .stats-card:hover {
-            transform: translateY(-5px);
+        .welcome-section p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        /* Service Cards */
+        .service-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            height: 380px;
+        }
+        
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            transition: left 0.6s ease;
+        }
+        
+        .service-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #6f42c1, #8e44ad, #9b59b6);
+            transition: left 0.5s ease;
+            z-index: 2;
+        }
+        
+        .service-card:hover::before {
+            left: 100%;
+        }
+        
+        .service-card:hover::after {
+            left: 0;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-15px) scale(1.03) rotate(1deg);
+            box-shadow: 0 25px 50px rgba(111, 66, 193, 0.25);
+            border-color: #6f42c1;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(111, 66, 193, 0.01));
+        }
+        
+        .service-card:active {
+            transform: translateY(-8px) scale(1.02);
+        }
+        
+        .service-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            display: block;
+            transition: all 0.4s ease;
+            color: #6f42c1 !important;
+        }
+        
+        .service-card:hover .service-icon {
+            transform: scale(1.2) rotate(10deg);
+            filter: drop-shadow(0 0 20px rgba(111, 66, 193, 0.5));
+        }
+        
+        .service-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #333;
+            line-height: 1.2;
+            transition: all 0.3s ease;
+        }
+        
+        .service-card:hover .service-title {
+            color: #6f42c1;
+            transform: translateX(5px);
+        }
+        
+        .service-description {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        
+        .service-description::before {
+            content: '•';
+            color: #6f42c1;
+            font-weight: bold;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+        
+        .service-features {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .service-features li {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 0.4rem;
+            position: relative;
+            padding-left: 1.5rem;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .service-features li::before {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: #6f42c1;
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+        
+        .service-card:hover .service-features li {
+            color: #555;
+            transform: translateX(3px);
+        }
+        
+        .service-card:hover .service-features li::before {
+            transform: scale(1.2);
+            filter: drop-shadow(0 0 5px rgba(111, 66, 193, 0.3));
+        }
+        
+        .service-status {
+            font-size: 0.9rem;
+            color: #28a745;
+            font-weight: 500;
+            margin-top: auto;
+            transition: all 0.3s ease;
+        }
+        
+        .service-card:hover .service-status {
+            color: #6f42c1;
+            font-weight: 600;
         }
         
         .btn-logout {
@@ -131,12 +284,14 @@
             padding: 8px 20px;
             color: white;
             font-weight: 600;
+            transition: all 0.3s ease;
         }
         
         .btn-logout:hover {
             background: linear-gradient(45deg, #ee5a52, #ff6b6b);
             color: white;
             transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
         }
         
         /* Responsive */
@@ -157,6 +312,10 @@
             .sidebar-toggle {
                 display: block !important;
             }
+            
+            .service-card {
+                margin-bottom: 1.5rem;
+            }
         }
         
         .sidebar-toggle {
@@ -165,6 +324,120 @@
             border: none;
             font-size: 1.5rem;
             color: #667eea;
+        }
+        
+        /* Animation for cards appearing */
+        .service-card {
+            animation: fadeInUp 0.6s ease forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        
+        .service-card:nth-child(1) { animation-delay: 0.1s; }
+        .service-card:nth-child(2) { animation-delay: 0.2s; }
+        .service-card:nth-child(3) { animation-delay: 0.3s; }
+        .service-card:nth-child(4) { animation-delay: 0.4s; }
+        .service-card:nth-child(5) { animation-delay: 0.5s; }
+        .service-card:nth-child(6) { animation-delay: 0.6s; }
+        .service-card:nth-child(7) { animation-delay: 0.7s; }
+        .service-card:nth-child(8) { animation-delay: 0.8s; }
+        .service-card:nth-child(9) { animation-delay: 0.9s; }
+        .service-card:nth-child(10) { animation-delay: 1.0s; }
+        .service-card:nth-child(11) { animation-delay: 1.1s; }
+        .service-card:nth-child(12) { animation-delay: 1.2s; }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Cursor Effects */
+        @keyframes particleFloat {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-50px) scale(0);
+            }
+        }
+        
+        @keyframes clickParticle {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1) rotate(180deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes trailFade {
+            0% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+        }
+        
+        .cursor-trail {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background: linear-gradient(45deg, #6f42c1, #8e44ad, #9b59b6);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9997;
+            animation: trailFade 0.8s ease-out forwards;
+        }
+        
+        /* Global cursor effects - will be applied to all pages */
+        @keyframes particleFloat {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-50px) scale(0);
+            }
+        }
+        
+        @keyframes clickParticle {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1) rotate(180deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes trailFade {
+            0% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
         }
     </style>
 </head>
@@ -269,708 +542,169 @@
             <button class="btn btn-logout" onclick="logout()">Logout</button>
         </div>
 
-        <div class="dashboard-card">
-            <div class="welcome-section text-center">
-                <h1>Welcome to Your Dashboard!</h1>
-                <p class="lead mb-0">You are successfully authenticated with JWT</p>
-            </div>
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+            <h1>Welcome to Your Dashboard!</h1>
+            <p class="lead mb-0">You are successfully authenticated with JWT</p>
+        </div>
 
-            <div class="row">
-                <div class="col-md-3 mb-3">
-                    <div class="stats-card text-center">
-                        <h3>🔐</h3>
-                        <h4>Authentication</h4>
-                        <p class="text-success">Active</p>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="stats-card text-center">
-                        <h3>🛡️</h3>
-                        <h4>Security</h4>
-                        <p class="text-success">Protected</p>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="stats-card text-center">
-                        <h3>⚡</h3>
-                        <h4>Performance</h4>
-                        <p class="text-success">Optimal</p>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="stats-card text-center">
-                        <h3>📊</h3>
-                        <h4>Monitoring</h4>
-                        <p class="text-success">Live</p>
-                    </div>
-                </div>
+        <!-- Services Grid -->
+        <div class="row">
+            <div class="col-lg-3 col-md-6">
+                <a href="/uws-billing.html" class="service-card">
+                    <i class="fas fa-credit-card service-icon"></i>
+                    <h5 class="service-title">UWS-Billing</h5>
+                    <p class="service-description">Manage your billing and subscription details.</p>
+                    <ul class="service-features">
+                        <li>View current usage and costs</li>
+                        <li>Manage payment methods</li>
+                        <li>Track subscription status</li>
+                    </ul>
+                    <p class="service-status">Active</p>
+                </a>
             </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>💰 UWS-Billing & Cost Management</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="lead">Comprehensive billing and cost management for all UWS services with pay-as-you-go pricing</p>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Features:</h6>
-                                    <ul>
-                                        <li>Monthly billing dashboards with total payment overview</li>
-                                        <li>Pay-as-you-go pricing based on service usage</li>
-                                        <li>Resource billing by time used or request count</li>
-                                        <li>Spending limit alerts and notifications</li>
-                                        <li>Detailed cost breakdown per service</li>
-                                        <li>Usage analytics and cost optimization insights</li>
-                                        <li>AWS-like pricing model for all UWS services</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <a href="/uws-billing.html" class="btn btn-warning btn-lg">
-                                        <i class="fas fa-credit-card"></i> Access UWS-Billing
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-lg-3 col-md-6">
+                <a href="/uws-monitoring.html" class="service-card">
+                    <i class="fas fa-chart-line service-icon"></i>
+                    <h5 class="service-title">UWS-Monitoring</h5>
+                    <p class="service-description">Monitor your applications and infrastructure in real-time.</p>
+                    <ul class="service-features">
+                        <li>Real-time performance metrics</li>
+                        <li>Alert management</li>
+                        <li>Historical data analysis</li>
+                    </ul>
+                    <p class="service-status">Active</p>
+                </a>
             </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>📊 UWS-Monitoring Dashboard</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="lead">Real-time monitoring and alerting for all UWS services with comprehensive metrics tracking</p>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Features:</h6>
-                                    <ul>
-                                        <li>Real-time metrics tracking for all UWS services</li>
-                                        <li>Response time, CPU, and RAM usage monitoring</li>
-                                        <li>Custom alert thresholds with email/webhook notifications</li>
-                                        <li>Interactive charts and graphs with time filters</li>
-                                        <li>Service health status and uptime monitoring</li>
-                                        <li>CSV export and sample data generation</li>
-                                        <li>Comprehensive event logging and analysis</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <a href="/uws-monitoring.html" class="btn btn-primary btn-lg">
-                                        <i class="fas fa-chart-line"></i> Access UWS-Monitoring
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-lg-3 col-md-6">
+                <a href="/uws-s3.html" class="service-card">
+                    <i class="fas fa-cloud service-icon"></i>
+                    <h5 class="service-title">UWS-S3</h5>
+                    <p class="service-description">Store and retrieve any amount of data at any time, from anywhere.</p>
+                    <ul class="service-features">
+                        <li>Object storage</li>
+                        <li>High durability and availability</li>
+                        <li>Scalable storage</li>
+                    </ul>
+                    <p class="service-status">Active</p>
+                </a>
             </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>☁️ UWS-S3 Cloud Storage</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="lead">Manage your cloud storage buckets and files</p>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Features:</h6>
-                                    <ul>
-                                        <li>Create and manage storage buckets</li>
-                                        <li>Upload files to buckets</li>
-                                        <li>Download and delete files</li>
-                                        <li>Secure file access with JWT</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <a href="/uws-s3.html" class="btn btn-primary btn-lg">
-                                        <i class="fas fa-cloud"></i> Access UWS-S3
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-lg-3 col-md-6">
+                <a href="/uws-compute.html" class="service-card">
+                    <i class="fas fa-server service-icon"></i>
+                    <h5 class="service-title">UWS-Compute</h5>
+                    <p class="service-description">Launch and manage virtual servers in the cloud.</p>
+                    <ul class="service-features">
+                        <li>Elastic compute power</li>
+                        <li>Managed infrastructure</li>
+                        <li>Scalable resources</li>
+                    </ul>
+                    <p class="service-status">Active</p>
+                </a>
             </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>⚡ UWS-Compute Container Service</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="lead">Deploy and manage Docker containers in the cloud</p>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Features:</h6>
-                                    <ul>
-                                        <li>Deploy Docker containers with custom configurations</li>
-                                        <li>Choose from micro, small, and medium instance sizes</li>
-                                        <li>Start, stop, and delete containers</li>
-                                        <li>Schedule container execution with cron expressions</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <a href="/uws-compute.html" class="btn btn-success btn-lg">
-                                        <i class="fas fa-server"></i> Access UWS-Compute
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-lg-3 col-md-6">
+                <a href="/uws-lambda.html" class="service-card">
+                    <i class="fas fa-code service-icon"></i>
+                    <h5 class="service-title">UWS-Lambda</h5>
+                    <p class="service-description">Run code without provisioning or managing servers.</p>
+                    <ul class="service-features">
+                        <li>Serverless execution</li>
+                        <li>Event-driven scaling</li>
+                        <li>Pay-per-use pricing</li>
+                    </ul>
+                    <p class="service-status">Active</p>
+                </a>
             </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>🚀 UWS-Lambda Function Service</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="lead">Create and execute serverless functions in isolated containers</p>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Features:</h6>
-                                    <ul>
-                                        <li>Create JavaScript and Python lambda functions</li>
-                                        <li>Execute code in secure isolated environments</li>
-                                        <li>Monitor execution logs and performance</li>
-                                        <li>Resource limits and timeout protection</li>
-                                        <li>Syntax highlighting with Monaco Editor</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <a href="/uws-lambda.html" class="btn btn-warning btn-lg">
-                                        <i class="fas fa-code"></i> Access UWS-Lambda
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-lg-3 col-md-6">
+                <a href="/uws-rdb.html" class="service-card">
+                    <i class="fas fa-database service-icon"></i>
+                    <h5 class="service-title">UWS-RDB</h5>
+                    <p class="service-description">Manage your relational databases with high availability and scalability.</p>
+                    <ul class="service-features">
+                        <li>Relational data storage</li>
+                        <li>High performance</li>
+                        <li>Scalable capacity</li>
+                    </ul>
+                    <p class="service-status">Active</p>
+                </a>
             </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>🗄️ UWS-RDB Relational Database Service</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="lead">Create, manage, and query your relational database instances</p>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Features:</h6>
-                                    <ul>
-                                        <li>Create database instances with custom CPU, RAM, and storage limits</li>
-                                        <li>Execute SQL queries (CREATE, INSERT, SELECT, UPDATE, DELETE)</li>
-                                        <li>Manage multiple tables per database instance</li>
-                                        <li>Secure PostgreSQL-based database service with JWT authentication</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <a href="/uws-rdb.html" class="btn btn-info btn-lg">
-                                        <i class="fas fa-database"></i> Access UWS-RDB
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-lg-3 col-md-6">
+                <a href="/uws-sqs.html" class="service-card">
+                    <i class="fas fa-envelope-open-text service-icon"></i>
+                    <h5 class="service-title">UWS-SQS</h5>
+                    <p class="service-description">Manage and process messages reliably and efficiently.</p>
+                    <ul class="service-features">
+                        <li>Message queuing</li>
+                        <li>Decoupling of services</li>
+                        <li>Scalable throughput</li>
+                    </ul>
+                    <p class="service-status">Active</p>
+                </a>
             </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>📨 UWS-SQS Message Queue Service</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="lead">Create, manage, and monitor your message queues with secure JWT authentication</p>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Features:</h6>
-                                    <ul>
-                                        <li>Create message queues with custom visibility timeout and retention settings</li>
-                                        <li>Send and receive messages with automatic visibility timeout handling</li>
-                                        <li>Peek at messages without consuming them</li>
-                                        <li>Delete messages after processing with secure user isolation</li>
-                                        <li>Real-time message monitoring and queue statistics</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <a href="/uws-sqs.html" class="btn btn-warning btn-lg">
-                                        <i class="fas fa-envelope-open-text"></i> Access UWS-SQS
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-lg-3 col-md-6">
+                <a href="/uws-nosql.html" class="service-card">
+                    <i class="fas fa-database service-icon"></i>
+                    <h5 class="service-title">UWS-NoSQL</h5>
+                    <p class="service-description">Store and query non-relational data with flexible schemas.</p>
+                    <ul class="service-features">
+                        <li>Key-value storage</li>
+                        <li>Document storage</li>
+                        <li>Graph databases</li>
+                    </ul>
+                    <p class="service-status">Active</p>
+                </a>
             </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>🗃️ UWS-NoSQL Document Database Service</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="lead">Create and manage NoSQL-style document tables with flexible JSON schema</p>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Features:</h6>
-                                    <ul>
-                                        <li>Create NoSQL tables with custom primary keys and descriptions</li>
-                                        <li>Store flexible JSON documents with arbitrary key-value fields</li>
-                                        <li>Query entities by indexed fields with powerful JSONB operators</li>
-                                        <li>Create and manage secondary indexes for better query performance</li>
-                                        <li>Full table scan with pagination support</li>
-                                        <li>Update entities with merge-style operations</li>
-                                        <li>Secure user isolation and JWT authentication</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <a href="/uws-nosql.html" class="btn btn-danger btn-lg">
-                                        <i class="fas fa-database"></i> Access UWS-NoSQL
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-lg-3 col-md-6">
+                <a href="/uws-ai.html" class="service-card">
+                    <i class="fas fa-brain service-icon"></i>
+                    <h5 class="service-title">UWS-AI</h5>
+                    <p class="service-description">Build and deploy intelligent applications.</p>
+                    <ul class="service-features">
+                        <li>Machine learning models</li>
+                        <li>Natural language processing</li>
+                        <li>Computer vision</li>
+                    </ul>
+                    <p class="service-status">Active</p>
+                </a>
             </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>🤖 UWS-AI Serverless AI Inference Service</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="lead">Deploy and invoke AI functions with ease. Powered by advanced machine learning models.</p>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Features:</h6>
-                                    <ul>
-                                        <li>Create AI functions with prebuilt models (Sentiment Analysis, Image Labeling, Code Explainer)</li>
-                                        <li>Support for text, image, and code input types</li>
-                                        <li>Real-time AI inference with mock outputs</li>
-                                        <li>Execution history tracking and performance monitoring</li>
-                                        <li>Resource limits and daily execution quotas</li>
-                                        <li>Secure JWT authentication and user isolation</li>
-                                        <li>Modern drag-and-drop interface for image uploads</li>
-                                        <li>Integration with UWS-Lambda for workflow automation</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <a href="/uws-ai.html" class="btn btn-primary btn-lg">
-                                        <i class="fas fa-brain"></i> Access UWS-AI
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-lg-3 col-md-6">
+                <a href="/uws-secrets.html" class="service-card">
+                    <i class="fas fa-key service-icon"></i>
+                    <h5 class="service-title">UWS-Secrets</h5>
+                    <p class="service-description">Securely manage and access sensitive information.</p>
+                    <ul class="service-features">
+                        <li>Key-value storage</li>
+                        <li>Managed secrets</li>
+                        <li>Automated rotation</li>
+                    </ul>
+                    <p class="service-status">Active</p>
+                </a>
             </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>🔐 UWS-Secrets Manager</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="lead">Secure secret management with AES-256 encryption and JWT authentication</p>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Features:</h6>
-                                    <ul>
-                                        <li>Create and manage secrets with strong AES-256 encryption</li>
-                                        <li>Secure secret storage with automatic encryption/decryption</li>
-                                        <li>Secret versioning and expiration date management</li>
-                                        <li>User isolation - secrets belong only to authenticated users</li>
-                                        <li>Modern UI with copy-to-clipboard functionality</li>
-                                        <li>Real-time statistics and expiration monitoring</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <a href="/uws-secrets.html" class="btn btn-danger btn-lg">
-                                        <i class="fas fa-key"></i> Access UWS-Secrets Manager
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-lg-3 col-md-6">
+                <a href="/uws-dns.html" class="service-card">
+                    <i class="fas fa-globe service-icon"></i>
+                    <h5 class="service-title">UWS-DNS</h5>
+                    <p class="service-description">Manage your domain names and DNS records.</p>
+                    <ul class="service-features">
+                        <li>Domain registration</li>
+                        <li>DNS management</li>
+                        <li>SSL certificates</li>
+                    </ul>
+                    <p class="service-status">Active</p>
+                </a>
             </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>🌐 UWS-DNS Domain Name Service</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="lead">Manage DNS zones and records for your domains with secure JWT authentication</p>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Features:</h6>
-                                    <ul>
-                                        <li>Create and manage DNS zones (e.g., myproject.uws)</li>
-                                        <li>Add DNS records: A, AAAA, CNAME, TXT with custom TTL</li>
-                                        <li>Edit and delete DNS records with confirmation</li>
-                                        <li>User isolation - each user manages their own zones</li>
-                                        <li>Real-time DNS record management and validation</li>
-                                        <li>Clean and intuitive interface for DNS administration</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <a href="/uws-dns.html" class="btn btn-primary btn-lg">
-                                        <i class="fas fa-globe"></i> Access UWS-DNS
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>🛡️ UWS-IAM Identity and Access Management</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="lead">Comprehensive role-based access control system for managing user permissions across all UWS services</p>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Features:</h6>
-                                    <ul>
-                                        <li>Create and manage custom roles with granular permissions</li>
-                                        <li>Assign users to roles with specific service access</li>
-                                        <li>Read and Write permissions for each service resource</li>
-                                        <li>Search and filter users for role assignment</li>
-                                        <li>Real-time permission validation across all services</li>
-                                        <li>Secure role-based access control (RBAC)</li>
-                                        <li>Comprehensive audit trail for role changes</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <a href="/uws-iam.html" class="btn btn-secondary btn-lg">
-                                        <i class="fas fa-users-cog"></i> Access UWS-IAM
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>🔑 JWT Token Information</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <p><strong>Token Status:</strong> <span class="badge bg-success">Valid</span></p>
-                                    <p><strong>Token Type:</strong> JWT (JSON Web Token)</p>
-                                    <p><strong>Expiration:</strong> 10 days from login</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <p><strong>Algorithm:</strong> HS512</p>
-                                    <p><strong>Issuer:</strong> Unicorn Auth System</p>
-                                    <p><strong>Subject:</strong> <span id="userEmail">Loading...</span></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>📋 API Endpoints</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Endpoint</th>
-                                            <th>Method</th>
-                                            <th>Description</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td><code>/api/auth/register</code></td>
-                                            <td>POST</td>
-                                            <td>User registration</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/auth/login</code></td>
-                                            <td>POST</td>
-                                            <td>User authentication</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/uws-rdb/instances</code></td>
-                                            <td>GET/POST</td>
-                                            <td>Database instances management</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/uws-rdb/instances/{id}/query</code></td>
-                                            <td>POST</td>
-                                            <td>Execute SQL queries</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/uws-sqs/queues</code></td>
-                                            <td>GET/POST</td>
-                                            <td>Queue management</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/uws-sqs/queues/{id}/messages</code></td>
-                                            <td>GET/POST</td>
-                                            <td>Message operations</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/h2-console</code></td>
-                                            <td>GET</td>
-                                            <td>Database console</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/lambdas</code></td>
-                                            <td>POST</td>
-                                            <td>Create lambda function</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/lambdas</code></td>
-                                            <td>GET</td>
-                                            <td>List user lambdas</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/lambdas/{id}/execute</code></td>
-                                            <td>POST</td>
-                                            <td>Execute lambda function</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/lambdas/{id}/logs</code></td>
-                                            <td>GET</td>
-                                            <td>Get execution logs</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/lambdas/{id}</code></td>
-                                            <td>DELETE</td>
-                                            <td>Delete lambda function</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/nosql/tables</code></td>
-                                            <td>GET/POST</td>
-                                            <td>NoSQL table management</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/nosql/tables/{id}/entity</code></td>
-                                            <td>POST/PUT/DELETE</td>
-                                            <td>NoSQL entity operations</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/nosql/tables/{id}/scan</code></td>
-                                            <td>GET</td>
-                                            <td>Scan NoSQL table with pagination</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/nosql/tables/{id}/query</code></td>
-                                            <td>GET</td>
-                                            <td>Query NoSQL entities by field</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/nosql/tables/{id}/stats</code></td>
-                                            <td>GET</td>
-                                            <td>Get NoSQL table statistics</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/nosql/tables/{id}/indexes</code></td>
-                                            <td>GET/POST</td>
-                                            <td>Manage NoSQL table indexes</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/nosql/tables/{id}/query-indexed</code></td>
-                                            <td>GET</td>
-                                            <td>Query with index optimization</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/secrets</code></td>
-                                            <td>POST</td>
-                                            <td>Create new secret</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/secrets</code></td>
-                                            <td>GET</td>
-                                            <td>List user secrets (metadata only)</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/secrets/{id}</code></td>
-                                            <td>GET</td>
-                                            <td>Get secret with decrypted value</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/secrets/{id}</code></td>
-                                            <td>PUT</td>
-                                            <td>Update secret</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/secrets/{id}</code></td>
-                                            <td>DELETE</td>
-                                            <td>Delete secret</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/secrets/stats</code></td>
-                                            <td>GET</td>
-                                            <td>Get secret statistics</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/ai/functions</code></td>
-                                            <td>GET</td>
-                                            <td>List user AI functions</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/ai/functions</code></td>
-                                            <td>POST</td>
-                                            <td>Create new AI function</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/ai/functions/{id}/invoke</code></td>
-                                            <td>POST</td>
-                                            <td>Invoke AI function with text/code</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/ai/functions/{id}/invoke-image</code></td>
-                                            <td>POST</td>
-                                            <td>Invoke AI function with image</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/ai/functions/{id}/history</code></td>
-                                            <td>GET</td>
-                                            <td>Get execution history</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/ai/functions/{id}</code></td>
-                                            <td>DELETE</td>
-                                            <td>Delete AI function</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/ai/statistics</code></td>
-                                            <td>GET</td>
-                                            <td>Get AI service statistics</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/ai/models</code></td>
-                                            <td>GET</td>
-                                            <td>Get available AI models</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/ai/types</code></td>
-                                            <td>GET</td>
-                                            <td>Get available function types</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/dns/zones</code></td>
-                                            <td>GET/POST</td>
-                                            <td>DNS zone management</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/dns/zones/{id}/records</code></td>
-                                            <td>GET/POST</td>
-                                            <td>DNS record operations</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/api/dns/records/{id}</code></td>
-                                            <td>GET/PUT/DELETE</td>
-                                            <td>DNS record management</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/uws-iam/roles</code></td>
-                                            <td>GET/POST</td>
-                                            <td>IAM role management</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/uws-iam/users/{id}/role/{roleId}</code></td>
-                                            <td>POST</td>
-                                            <td>Assign user to role</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>/uws-iam/users/search</code></td>
-                                            <td>GET</td>
-                                            <td>Search users for role assignment</td>
-                                            <td><span class="badge bg-success">Active</span></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-lg-3 col-md-6">
+                <a href="/uws-iam.html" class="service-card">
+                    <i class="fas fa-users-cog service-icon"></i>
+                    <h5 class="service-title">UWS-IAM</h5>
+                    <p class="service-description">Manage users, groups, and permissions.</p>
+                    <ul class="service-features">
+                        <li>User authentication</li>
+                        <li>Role-based access control</li>
+                        <li>Resource-level permissions</li>
+                    </ul>
+                    <p class="service-status">Active</p>
+                </a>
             </div>
         </div>
     </div>
@@ -1019,16 +753,6 @@
             }
 
             console.log('JWT token found, proceeding to dashboard');
-            
-            // Decode JWT token to get user email
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                document.getElementById('userEmail').textContent = payload.sub || 'Unknown';
-                console.log('User email from token:', payload.sub);
-            } catch (error) {
-                console.error('Error decoding token:', error);
-                document.getElementById('userEmail').textContent = 'Error decoding token';
-            }
         });
 
         function logout() {
@@ -1055,6 +779,99 @@
                 }
             }
         }, 60000); // Check every minute
+        
+        // Cursor Effects
+        let trailDots = [];
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        let isMoving = false;
+        let moveTimeout;
+        
+        // Mouse movement particles
+        document.addEventListener('mousemove', function(e) {
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            
+            if (!isMoving) {
+                isMoving = true;
+            }
+            
+            clearTimeout(moveTimeout);
+            moveTimeout = setTimeout(() => {
+                isMoving = false;
+            }, 50);
+            
+            // Create trail dots
+            if (isMoving && trailDots.length < 15) {
+                const trailDot = document.createElement('div');
+                trailDot.className = 'cursor-trail';
+                trailDot.style.left = e.clientX + 'px';
+                trailDot.style.top = e.clientY + 'px';
+                
+                document.body.appendChild(trailDot);
+                trailDots.push(trailDot);
+                
+                setTimeout(() => {
+                    if (trailDot.parentNode) {
+                        trailDot.parentNode.removeChild(trailDot);
+                        trailDots = trailDots.filter(dot => dot !== trailDot);
+                    }
+                }, 800);
+            }
+            
+            // Create particle effect
+            if (Math.random() < 0.3) { // 30% chance to create particles
+                for (let i = 0; i < 3; i++) {
+                    const particle = document.createElement('div');
+                    particle.style.position = 'fixed';
+                    particle.style.left = (e.clientX + Math.random() * 20 - 10) + 'px';
+                    particle.style.top = (e.clientY + Math.random() * 20 - 10) + 'px';
+                    particle.style.width = '3px';
+                    particle.style.height = '3px';
+                    particle.style.background = `hsl(${270 + Math.random() * 60}, 100%, 60%)`; // Purple range
+                    particle.style.borderRadius = '50%';
+                    particle.style.pointerEvents = 'none';
+                    particle.style.zIndex = '9998';
+                    particle.style.animation = `particleFloat 1s ease-out forwards`;
+                    
+                    document.body.appendChild(particle);
+                    
+                    setTimeout(() => {
+                        if (particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }, 1000);
+                }
+            }
+        });
+        
+        // Click particle effect
+        document.addEventListener('click', function(e) {
+            // Don't create particles on form elements
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON') {
+                return;
+            }
+            
+            const particle = document.createElement('div');
+            particle.style.position = 'fixed';
+            particle.style.left = e.clientX + 'px';
+            particle.style.top = e.clientY + 'px';
+            particle.style.width = '8px';
+            particle.style.height = '8px';
+            particle.style.background = 'linear-gradient(45deg, #6f42c1, #8e44ad, #9b59b6)';
+            particle.style.borderRadius = '50%';
+            particle.style.pointerEvents = 'none';
+            particle.style.zIndex = '9999';
+            particle.style.animation = 'clickParticle 0.6s ease-out forwards';
+            
+            document.body.appendChild(particle);
+            
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+            }, 600);
+        });
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

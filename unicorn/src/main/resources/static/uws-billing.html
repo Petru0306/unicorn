@@ -18,7 +18,7 @@
         }
 
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #ffffff;
             min-height: 100vh;
             overflow-x: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -282,6 +282,55 @@
 
         .spinner-border {
             color: var(--billing-primary);
+        }
+        
+        /* Cursor Effects */
+        @keyframes particleFloat {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-50px) scale(0);
+            }
+        }
+        
+        @keyframes clickParticle {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1) rotate(180deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes trailFade {
+            0% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+        }
+        
+        .cursor-trail {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background: linear-gradient(45deg, #6f42c1, #8e44ad, #9b59b6);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9997;
+            animation: trailFade 0.8s ease-out forwards;
         }
     </style>
 </head>
@@ -1193,6 +1242,99 @@
             
             return descriptions[service]?.[resource] || 'Usage-based pricing';
         }
+        
+        // Cursor Effects
+        let trailDots = [];
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        let isMoving = false;
+        let moveTimeout;
+        
+        // Mouse movement particles
+        document.addEventListener('mousemove', function(e) {
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            
+            if (!isMoving) {
+                isMoving = true;
+            }
+            
+            clearTimeout(moveTimeout);
+            moveTimeout = setTimeout(() => {
+                isMoving = false;
+            }, 50);
+            
+            // Create trail dots
+            if (isMoving && trailDots.length < 15) {
+                const trailDot = document.createElement('div');
+                trailDot.className = 'cursor-trail';
+                trailDot.style.left = e.clientX + 'px';
+                trailDot.style.top = e.clientY + 'px';
+                
+                document.body.appendChild(trailDot);
+                trailDots.push(trailDot);
+                
+                setTimeout(() => {
+                    if (trailDot.parentNode) {
+                        trailDot.parentNode.removeChild(trailDot);
+                        trailDots = trailDots.filter(dot => dot !== trailDot);
+                    }
+                }, 800);
+            }
+            
+            // Create particle effect
+            if (Math.random() < 0.3) { // 30% chance to create particles
+                for (let i = 0; i < 3; i++) {
+                    const particle = document.createElement('div');
+                    particle.style.position = 'fixed';
+                    particle.style.left = (e.clientX + Math.random() * 20 - 10) + 'px';
+                    particle.style.top = (e.clientY + Math.random() * 20 - 10) + 'px';
+                    particle.style.width = '3px';
+                    particle.style.height = '3px';
+                    particle.style.background = `hsl(${270 + Math.random() * 60}, 100%, 60%)`; // Purple range
+                    particle.style.borderRadius = '50%';
+                    particle.style.pointerEvents = 'none';
+                    particle.style.zIndex = '9998';
+                    particle.style.animation = `particleFloat 1s ease-out forwards`;
+                    
+                    document.body.appendChild(particle);
+                    
+                    setTimeout(() => {
+                        if (particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }, 1000);
+                }
+            }
+        });
+        
+        // Click particle effect
+        document.addEventListener('click', function(e) {
+            // Don't create particles on form elements
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON') {
+                return;
+            }
+            
+            const particle = document.createElement('div');
+            particle.style.position = 'fixed';
+            particle.style.left = e.clientX + 'px';
+            particle.style.top = e.clientY + 'px';
+            particle.style.width = '8px';
+            particle.style.height = '8px';
+            particle.style.background = 'linear-gradient(45deg, #6f42c1, #8e44ad, #9b59b6)';
+            particle.style.borderRadius = '50%';
+            particle.style.pointerEvents = 'none';
+            particle.style.zIndex = '9999';
+            particle.style.animation = 'clickParticle 0.6s ease-out forwards';
+            
+            document.body.appendChild(particle);
+            
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+            }, 600);
+        });
     </script>
 </body>
 </html> 
