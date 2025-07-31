@@ -9,12 +9,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --primary-color: #667eea;
-            --secondary-color: #764ba2;
-            --success-color: #28a745;
-            --warning-color: #ffc107;
-            --danger-color: #dc3545;
-            --info-color: #17a2b8;
+            --monitoring-primary: #6f42c1;
+            --monitoring-secondary: #8e44ad;
+            --monitoring-success: #28a745;
+            --monitoring-warning: #ffc107;
+            --monitoring-danger: #dc3545;
+            --monitoring-info: #17a2b8;
             --dark-color: #343a40;
             --light-color: #f8f9fa;
         }
@@ -24,6 +24,12 @@
             min-height: 100vh;
             overflow-x: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+
+        body::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
         }
 
         /* Sidebar Styles */
@@ -96,6 +102,27 @@
             margin-left: 280px;
             min-height: 100vh;
             padding: 2rem;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #6f42c1 #f1f1f1;
+        }
+
+        .main-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .main-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .main-content::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #6f42c1, #8e44ad);
+            border-radius: 10px;
+        }
+
+        .main-content::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #8e44ad, #6f42c1);
         }
 
         .top-navbar {
@@ -149,27 +176,63 @@
         }
 
         .monitoring-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.98);
             border-radius: 20px;
             padding: 2rem;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
             margin-bottom: 2rem;
             backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .monitoring-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(111, 66, 193, 0.15);
+            border-color: #6f42c1;
+        }
+
+        .monitoring-header {
+            background: linear-gradient(45deg, var(--monitoring-primary), var(--monitoring-secondary));
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .monitoring-header:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(111, 66, 193, 0.3);
         }
 
         .stats-card {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
+            background: white;
             border-radius: 15px;
             padding: 1.5rem;
-            text-align: center;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            margin-bottom: 1rem;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--monitoring-primary);
+            border: 2px solid transparent;
         }
 
         .stats-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(111, 66, 193, 0.2);
+            border-color: #6f42c1;
+        }
+
+        .stats-card.success {
+            border-left-color: var(--monitoring-success);
+        }
+
+        .stats-card.warning {
+            border-left-color: var(--monitoring-warning);
+        }
+
+        .stats-card.danger {
+            border-left-color: var(--monitoring-danger);
         }
 
         .service-card {
@@ -177,58 +240,113 @@
             border-radius: 15px;
             padding: 1.5rem;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
+            transition: all 0.3s ease;
             margin-bottom: 1rem;
-            border-left: 4px solid var(--primary-color);
+            border-left: 4px solid var(--monitoring-primary);
+            border: 2px solid transparent;
         }
 
         .service-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 25px rgba(111, 66, 193, 0.15);
+            border-color: #6f42c1;
         }
 
         .chart-container {
-            background: white;
+            position: relative;
+            height: 400px;
+            margin: 1rem 0;
             border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 1rem;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .chart-container:hover {
+            box-shadow: 0 12px 35px rgba(111, 66, 193, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .chart-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chart-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .chart-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #6f42c1, #8e44ad);
+            border-radius: 10px;
+        }
+
+        .chart-container::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #8e44ad, #6f42c1);
         }
 
         .alert-card {
             background: white;
             border-radius: 15px;
             padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             margin-bottom: 1rem;
-            border-left: 4px solid var(--warning-color);
+            border-left: 4px solid var(--monitoring-warning);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .alert-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 25px rgba(111, 66, 193, 0.15);
+            border-color: #6f42c1;
         }
 
         .alert-card.critical {
-            border-left-color: var(--danger-color);
+            border-left-color: var(--monitoring-danger);
+            background: linear-gradient(135deg, #fff5f5, #ffe6e6);
         }
 
         .btn-monitoring {
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            background: linear-gradient(45deg, var(--monitoring-primary), var(--monitoring-secondary));
             border: none;
             border-radius: 10px;
             padding: 10px 20px;
             color: white;
             font-weight: 600;
-            transition: transform 0.3s ease;
+            transition: all 0.3s ease;
         }
 
         .btn-monitoring:hover {
-            transform: translateY(-2px);
+            background: linear-gradient(45deg, var(--monitoring-secondary), var(--monitoring-primary));
             color: white;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(111, 66, 193, 0.3);
         }
 
         .time-filter {
             background: white;
-            border-radius: 10px;
-            padding: 1rem;
+            border-radius: 15px;
+            padding: 1.5rem;
             margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .time-filter:hover {
+            box-shadow: 0 12px 35px rgba(111, 66, 193, 0.15);
+            border-color: #6f42c1;
+            transform: translateY(-2px);
+        }
+
+        .time-filter h5 {
+            color: #6f42c1;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .time-filter .btn-group {
+            gap: 0.5rem;
         }
 
         .status-indicator {
@@ -239,9 +357,9 @@
             margin-right: 8px;
         }
 
-        .status-healthy { background-color: var(--success-color); }
-        .status-warning { background-color: var(--warning-color); }
-        .status-critical { background-color: var(--danger-color); }
+        .status-healthy { background-color: var(--monitoring-success); }
+        .status-warning { background-color: var(--monitoring-warning); }
+        .status-critical { background-color: var(--monitoring-danger); }
 
         .metric-value {
             font-size: 2rem;
@@ -268,7 +386,7 @@
             position: absolute;
             top: -5px;
             right: -5px;
-            background: var(--danger-color);
+            background: var(--monitoring-danger);
             color: white;
             border-radius: 50%;
             width: 20px;
@@ -284,7 +402,7 @@
             width: 20px;
             height: 20px;
             border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary-color);
+            border-top: 3px solid var(--monitoring-primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -294,6 +412,167 @@
             100% { transform: rotate(360deg); }
         }
 
+        .service-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            margin-right: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .service-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .service-s3 { background: linear-gradient(45deg, #667eea, #764ba2); }
+        .service-compute { background: linear-gradient(45deg, #f093fb, #f5576c); }
+        .service-lambda { background: linear-gradient(45deg, #4facfe, #00f2fe); }
+        .service-rdb { background: linear-gradient(45deg, #43e97b, #38f9d7); }
+        .service-nosql { background: linear-gradient(45deg, #fa709a, #fee140); }
+        .service-sqs { background: linear-gradient(45deg, #a8edea, #fed6e3); }
+        .service-ai { background: linear-gradient(45deg, #ff9a9e, #fecfef); }
+        .service-secrets { background: linear-gradient(45deg, #ffecd2, #fcb69f); }
+        .service-dns { background: linear-gradient(45deg, #a8caba, #5d4e75); }
+        .service-iam { background: linear-gradient(45deg, #d299c2, #fef9d7); }
+
+        /* Requirements Cards */
+        .requirements-card {
+            background: linear-gradient(135deg, rgba(111, 66, 193, 0.05), rgba(142, 68, 173, 0.05));
+            border: 2px solid rgba(111, 66, 193, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+        .requirements-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(111, 66, 193, 0.15);
+            border-color: #6f42c1;
+        }
+
+        .requirements-card h6 {
+            color: #6f42c1;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .requirements-card h6 i {
+            margin-right: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .requirements-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .requirements-list li {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0;
+            color: #495057;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .requirements-list li:hover {
+            color: #6f42c1;
+            transform: translateX(5px);
+        }
+
+        .requirements-list li i {
+            margin-right: 0.75rem;
+            color: #6f42c1;
+            width: 16px;
+            text-align: center;
+        }
+
+        .function-badge {
+            background: linear-gradient(45deg, var(--monitoring-primary), var(--monitoring-secondary));
+            color: white;
+            padding: 0.75rem;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .function-badge:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(111, 66, 193, 0.3);
+        }
+
+        .function-badge i {
+            margin-right: 0.5rem;
+        }
+
+        /* Graphic Examples Styles */
+        .graphic-examples {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .example-card {
+            background: linear-gradient(135deg, rgba(111, 66, 193, 0.05), rgba(142, 68, 173, 0.05));
+            border: 2px solid rgba(111, 66, 193, 0.1);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .example-card:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(111, 66, 193, 0.2);
+            border-color: #6f42c1;
+        }
+
+        .example-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .example-header i {
+            font-size: 1.1rem;
+            margin-right: 0.5rem;
+        }
+
+        .example-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .example-chart {
+            background: white;
+            border-radius: 8px;
+            padding: 0.5rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .example-meta {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .example-meta .badge {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+        }
 
     </style>
 </head>
@@ -317,7 +596,7 @@
                 </a>
             </div>
             <div class="nav-item">
-                <a href="/uws-monitoring.html" class="nav-link">
+                <a href="/uws-monitoring.html" class="nav-link active">
                     <i class="fas fa-chart-line"></i>
                     UWS-Monitoring
                 </a>
@@ -407,6 +686,12 @@
         </div>
 
         <div class="container dashboard-container">
+        <!-- Header -->
+        <div class="monitoring-header">
+            <h1><i class="fas fa-chart-line"></i> UWS-Monitoring Dashboard</h1>
+            <p class="lead mb-0">Real-time monitoring and analytics for all UWS services</p>
+        </div>
+
         <!-- Time Filter -->
         <div class="time-filter">
             <div class="row align-items-center">
@@ -427,40 +712,66 @@
         </div>
 
         <!-- System Health Overview -->
-        <div class="monitoring-card">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="stats-card">
-                        <div class="metric-value" id="totalRequests">0</div>
-                        <div class="metric-label">Total Requests</div>
+        <div class="row" id="summaryStats">
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <div class="d-flex align-items-center">
+                        <div class="service-icon service-s3">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-1" id="totalRequests">0</h4>
+                            <p class="text-muted mb-0">Total Requests</p>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="stats-card">
-                        <div class="metric-value" id="avgResponseTime">0ms</div>
-                        <div class="metric-label">Avg Response Time</div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card success">
+                    <div class="d-flex align-items-center">
+                        <div class="service-icon service-lambda">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-1" id="avgResponseTime">0ms</h4>
+                            <p class="text-muted mb-0">Avg Response Time</p>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="stats-card">
-                        <div class="metric-value" id="errorRate">0%</div>
-                        <div class="metric-label">Error Rate</div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card warning">
+                    <div class="d-flex align-items-center">
+                        <div class="service-icon service-compute">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-1" id="errorRate">0%</h4>
+                            <p class="text-muted mb-0">Error Rate</p>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="stats-card">
-                        <div class="metric-value" id="activeAlerts">0</div>
-                        <div class="metric-label">Active Alerts</div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card danger">
+                    <div class="d-flex align-items-center">
+                        <div class="service-icon service-rdb">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-1" id="activeAlerts">0</h4>
+                            <p class="text-muted mb-0">Active Alerts</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Real-time Metrics -->
+        <!-- Charts Row -->
         <div class="row">
             <div class="col-md-8">
                 <div class="monitoring-card">
-                    <h4><i class="fas fa-chart-area"></i> Request Volume by Service</h4>
+                    <h5><i class="fas fa-chart-area"></i> Request Volume by Service</h5>
                     <div class="chart-container">
                         <canvas id="requestVolumeChart"></canvas>
                     </div>
@@ -468,7 +779,7 @@
             </div>
             <div class="col-md-4">
                 <div class="monitoring-card">
-                    <h4><i class="fas fa-tachometer-alt"></i> Response Time Statistics</h4>
+                    <h5><i class="fas fa-tachometer-alt"></i> Response Time Statistics</h5>
                     <div class="chart-container">
                         <canvas id="responseTimeChart"></canvas>
                     </div>
@@ -478,7 +789,7 @@
 
         <!-- Service Status -->
         <div class="monitoring-card">
-            <h4><i class="fas fa-server"></i> Service Status</h4>
+            <h5><i class="fas fa-server"></i> Service Status</h5>
             <div class="row" id="serviceStatus">
                 <!-- Service cards will be populated here -->
             </div>
@@ -488,7 +799,7 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="monitoring-card">
-                    <h4><i class="fas fa-chart-bar"></i> CPU Usage by Service</h4>
+                    <h5><i class="fas fa-chart-bar"></i> CPU Usage by Service</h5>
                     <div class="chart-container">
                         <canvas id="cpuUsageChart"></canvas>
                     </div>
@@ -496,7 +807,7 @@
             </div>
             <div class="col-md-6">
                 <div class="monitoring-card">
-                    <h4><i class="fas fa-memory"></i> RAM Usage by Service</h4>
+                    <h5><i class="fas fa-memory"></i> RAM Usage by Service</h5>
                     <div class="chart-container">
                         <canvas id="ramUsageChart"></canvas>
                     </div>
@@ -504,12 +815,21 @@
             </div>
         </div>
 
-        <!-- Alerts Section -->
+        <!-- Recent Events and Active Alerts -->
         <div class="row">
-            <div class="col-md-8">
+            <div class="col-md-6">
+                <div class="monitoring-card">
+                    <h5><i class="fas fa-list"></i> Recent Events</h5>
+                    <div id="recentEvents">
+                        <!-- Recent events will be populated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
                 <div class="monitoring-card">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4><i class="fas fa-bell"></i> Active Alerts</h4>
+                        <h5><i class="fas fa-bell"></i> Active Alerts</h5>
                         <button class="btn btn-monitoring" onclick="showCreateAlertModal()">
                             <i class="fas fa-plus"></i> Create Alert
                         </button>
@@ -519,26 +839,92 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="monitoring-card">
-                    <h4><i class="fas fa-list"></i> Recent Events</h4>
-                    <div id="recentEvents">
-                        <!-- Recent events will be populated here -->
-                    </div>
-                </div>
-            </div>
         </div>
 
-        <!-- Custom Tables Section -->
-        <div class="monitoring-card">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4><i class="fas fa-table"></i> Custom Tables</h4>
-                <button class="btn btn-monitoring" onclick="showCreateCustomTableModal()">
-                    <i class="fas fa-plus"></i> Create New Table
-                </button>
-            </div>
-            <div id="customTablesContainer">
-                <!-- Custom tables will be populated here -->
+        <!-- Custom Tables -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="monitoring-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5><i class="fas fa-table"></i> Custom Tables</h5>
+                        <button class="btn btn-monitoring" onclick="showCreateCustomTableModal()">
+                            <i class="fas fa-plus"></i> Create New Table
+                        </button>
+                    </div>
+                    
+                    <!-- Graphic Examples Display -->
+                    <div class="graphic-examples">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="example-card">
+                                    <div class="example-header">
+                                        <i class="fas fa-chart-line text-primary"></i>
+                                        <span class="example-title">CPU Usage Trend</span>
+                                    </div>
+                                    <div class="example-chart">
+                                        <canvas id="exampleChart1" width="200" height="100"></canvas>
+                                    </div>
+                                    <div class="example-meta">
+                                        <span class="badge bg-primary">UWS-Compute</span>
+                                        <span class="badge bg-success">AVG</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <div class="example-card">
+                                    <div class="example-header">
+                                        <i class="fas fa-chart-bar text-warning"></i>
+                                        <span class="example-title">Response Time Distribution</span>
+                                    </div>
+                                    <div class="example-chart">
+                                        <canvas id="exampleChart2" width="200" height="100"></canvas>
+                                    </div>
+                                    <div class="example-meta">
+                                        <span class="badge bg-info">UWS-Lambda</span>
+                                        <span class="badge bg-warning">P95</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <div class="example-card">
+                                    <div class="example-header">
+                                        <i class="fas fa-chart-pie text-danger"></i>
+                                        <span class="example-title">Error Rate by Service</span>
+                                    </div>
+                                    <div class="example-chart">
+                                        <canvas id="exampleChart3" width="200" height="100"></canvas>
+                                    </div>
+                                    <div class="example-meta">
+                                        <span class="badge bg-secondary">All Services</span>
+                                        <span class="badge bg-danger">SUM</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <div class="example-card">
+                                    <div class="example-header">
+                                        <i class="fas fa-chart-area text-success"></i>
+                                        <span class="example-title">Memory Usage Over Time</span>
+                                    </div>
+                                    <div class="example-chart">
+                                        <canvas id="exampleChart4" width="200" height="100"></canvas>
+                                    </div>
+                                    <div class="example-meta">
+                                        <span class="badge bg-dark">UWS-RDB</span>
+                                        <span class="badge bg-info">MAX</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="customTablesContainer">
+                        <!-- Custom tables will be populated here -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -829,7 +1215,140 @@
             
             loadDashboardData();
             startRealTimeUpdates();
+            initializeExampleCharts();
         });
+
+        // Initialize example charts
+        function initializeExampleCharts() {
+            // Example Chart 1: CPU Usage Trend (Line Chart)
+            const ctx1 = document.getElementById('exampleChart1');
+            if (ctx1) {
+                new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                        datasets: [{
+                            label: 'CPU Usage',
+                            data: [45, 52, 48, 65, 78, 72],
+                            borderColor: '#6f42c1',
+                            backgroundColor: 'rgba(111, 66, 193, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: { display: false },
+                            y: { display: false }
+                        },
+                        elements: {
+                            point: { radius: 0 }
+                        }
+                    }
+                });
+            }
+
+            // Example Chart 2: Response Time Distribution (Bar Chart)
+            const ctx2 = document.getElementById('exampleChart2');
+            if (ctx2) {
+                new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: ['<100ms', '100-200ms', '200-500ms', '>500ms'],
+                        datasets: [{
+                            label: 'Requests',
+                            data: [65, 25, 8, 2],
+                            backgroundColor: [
+                                'rgba(40, 167, 69, 0.8)',
+                                'rgba(255, 193, 7, 0.8)',
+                                'rgba(255, 152, 0, 0.8)',
+                                'rgba(220, 53, 69, 0.8)'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: { display: false },
+                            y: { display: false }
+                        }
+                    }
+                });
+            }
+
+            // Example Chart 3: Error Rate by Service (Pie Chart)
+            const ctx3 = document.getElementById('exampleChart3');
+            if (ctx3) {
+                new Chart(ctx3, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['S3', 'Compute', 'Lambda', 'RDB'],
+                        datasets: [{
+                            data: [12, 8, 15, 5],
+                            backgroundColor: [
+                                '#6f42c1',
+                                '#28a745',
+                                '#ffc107',
+                                '#17a2b8'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+
+            // Example Chart 4: Memory Usage Over Time (Area Chart)
+            const ctx4 = document.getElementById('exampleChart4');
+            if (ctx4) {
+                new Chart(ctx4, {
+                    type: 'line',
+                    data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'Memory Usage',
+                            data: [1200, 1350, 1100, 1400, 1600, 1300, 1250],
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: { display: false },
+                            y: { display: false }
+                        },
+                        elements: {
+                            point: { radius: 0 }
+                        }
+                    }
+                });
+            }
+        }
 
         // Load dashboard data
         async function loadDashboardData() {

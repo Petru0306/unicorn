@@ -592,6 +592,22 @@
         let codeMirror;
         let instances = [];
         let currentBackup = null;
+        let currentUserEmail = '';
+
+        // Get current user email from JWT token
+        function getCurrentUserEmail() {
+            const token = localStorage.getItem('jwtToken');
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    return payload.sub || payload.email || '';
+                } catch (e) {
+                    console.error('Error parsing JWT token:', e);
+                    return '';
+                }
+            }
+            return '';
+        }
 
         // Initialize CodeMirror for SQL editor
         document.addEventListener('DOMContentLoaded', function() {
@@ -607,6 +623,7 @@
 
             // Check authentication and load data
             checkAuth();
+            currentUserEmail = getCurrentUserEmail();
             loadInstances();
             updateBackupInstanceSelect(); // Initialize backup instance select
         });
@@ -703,11 +720,20 @@
 
             let html = '<div class="row">';
             instances.forEach(instance => {
+                // Check if this is a shared instance (not owned by current user)
+                const isShared = instance.owner && instance.owner !== currentUserEmail;
+                const cardClass = isShared ? 'border-warning' : 'border-primary';
+                const headerClass = isShared ? 'bg-warning text-dark' : 'bg-primary text-white';
+                const ownerBadge = isShared ? `<span class="badge bg-info me-2">Shared by ${instance.owner}</span>` : '';
+                
                 html += `
                     <div class="col-md-6 mb-3">
-                        <div class="card border-primary">
-                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0"><i class="fas fa-database"></i> ${instance.dbName}</h6>
+                        <div class="card ${cardClass}">
+                            <div class="card-header ${headerClass} d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0"><i class="fas fa-database"></i> ${instance.dbName}</h6>
+                                    ${ownerBadge}
+                                </div>
                                 <span class="badge bg-light text-dark">${instance.status}</span>
                             </div>
                             <div class="card-body">
@@ -738,9 +764,9 @@
                                     <button class="btn btn-sm btn-outline-warning" onclick="loadPerformanceMetrics(${instance.id})">
                                         <i class="fas fa-tachometer-alt"></i> Performance
                                     </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteInstance(${instance.id})">
+                                    ${!isShared ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteInstance(${instance.id})">
                                         <i class="fas fa-trash"></i> Delete
-                                    </button>
+                                    </button>` : ''}
                                 </div>
                             </div>
                         </div>

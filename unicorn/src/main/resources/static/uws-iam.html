@@ -272,7 +272,7 @@
                 </a>
             </div>
             <div class="nav-item">
-                <a href="/uws-iam.html" class="nav-link">
+                <a href="/uws-iam.html" class="nav-link active">
                     <i class="fas fa-users-cog"></i>
                     UWS-IAM
                 </a>
@@ -315,6 +315,11 @@
                             <i class="fas fa-users"></i> User Assignments
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="my-roles-tab" data-bs-toggle="tab" data-bs-target="#my-roles" type="button" role="tab">
+                            <i class="fas fa-user-shield"></i> My Roles
+                        </button>
+                    </li>
                 </ul>
 
                 <!-- Tab Content -->
@@ -348,6 +353,13 @@
                         
                         <div id="usersList">
                             <!-- Users with roles will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- My Roles Tab -->
+                    <div class="tab-pane fade" id="my-roles" role="tabpanel">
+                        <div id="myRolesContainer">
+                            <!-- My roles will be loaded here -->
                         </div>
                     </div>
                 </div>
@@ -409,6 +421,39 @@
         </div>
     </div>
 
+    <!-- Edit Role Modal -->
+    <div class="modal fade" id="editRoleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-edit"></i> Edit Role</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editRoleForm">
+                        <div class="mb-3">
+                            <label class="form-label">Role Name</label>
+                            <input type="text" class="form-control" id="editRoleName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="editRoleDescription" rows="3"></textarea>
+                        </div>
+                        
+                        <h6 class="mb-3">Permissions</h6>
+                        <div id="editPermissionsContainer">
+                            <!-- Permissions will be generated here -->
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="updateRole()">Update Role</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let currentRoleId = null;
@@ -418,6 +463,7 @@
         // Helper pentru fetch cu JWT
         function fetchWithAuth(url, options = {}) {
             const token = localStorage.getItem('jwtToken');
+            console.log('Using token:', token ? token.substring(0, 20) + '...' : 'No token');
             options.headers = options.headers || {};
             if (token) {
                 options.headers['Authorization'] = 'Bearer ' + token;
@@ -535,6 +581,149 @@
             }
         }
 
+        // Load my roles
+        async function loadMyRoles() {
+            try {
+                const response = await fetchWithAuth('/uws-iam/my-roles');
+                const data = await response.json();
+                
+                console.log('My roles response:', data);
+                
+                if (data.success) {
+                    console.log('User roles data:', data.userRoles);
+                    displayMyRoles(data.userRoles || []);
+                } else {
+                    console.error('Error loading my roles:', data.error);
+                    displayMyRoles([]);
+                }
+            } catch (error) {
+                console.error('Error loading my roles:', error);
+                displayMyRoles([]);
+            }
+        }
+
+        // Display my roles
+        function displayMyRoles(userRoles) {
+            console.log('Displaying my roles:', userRoles);
+            const container = document.getElementById('myRolesContainer');
+            container.innerHTML = '';
+
+            if (userRoles.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-user-slash"></i>
+                        <strong>No Roles Assigned</strong><br>
+                        You don't have any roles assigned to you yet. Contact an administrator to get access to services.
+                    </div>
+                `;
+                return;
+            }
+
+            const rolesGrid = document.createElement('div');
+            rolesGrid.className = 'row';
+            
+            userRoles.forEach(userRole => {
+                const roleCard = createMyRoleCard(userRole);
+                rolesGrid.appendChild(roleCard);
+            });
+            
+            container.appendChild(rolesGrid);
+        }
+
+        // Create my role card
+        function createMyRoleCard(userRole) {
+            console.log('Creating card for userRole:', userRole);
+            const role = userRole.role;
+            const permissions = userRole.permissions || {};
+            const assignedBy = userRole.assignedBy;
+            const assignedAt = new Date(userRole.assignedAt).toLocaleDateString();
+
+            // Group permissions by service
+            const servicePermissions = {};
+            Object.keys(permissions).forEach(key => {
+                const [service, resource] = key.split(':');
+                if (!servicePermissions[service]) {
+                    servicePermissions[service] = {};
+                }
+                servicePermissions[service][resource] = permissions[key];
+            });
+
+            // Get unique services
+            const services = Object.keys(servicePermissions);
+            
+            const permissionsHtml = services.map(service => {
+                const servicePerms = servicePermissions[service];
+                const permissionList = Object.keys(servicePerms).map(resource => {
+                    const perms = servicePerms[resource];
+                    return `<span class="badge bg-secondary me-1">${resource}: ${perms}</span>`;
+                }).join('');
+                
+                return `
+                    <div class="mb-2">
+                        <strong class="text-primary">${service}:</strong><br>
+                        ${permissionList}
+                    </div>
+                `;
+            }).join('');
+
+            const accessButtons = services.map(service => {
+                const serviceUrl = getServiceUrl(service);
+                return `<a href="${serviceUrl}" class="btn btn-sm btn-primary me-1 mb-1">Access ${service}</a>`;
+            }).join('');
+
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'col-md-6 col-lg-4 mb-3';
+            cardDiv.innerHTML = `
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0"><i class="fas fa-user-shield"></i> ${role.name}</h6>
+                            <span class="badge bg-light text-dark">Active</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text text-muted">${role.description || 'No description provided'}</p>
+                        
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-user"></i> Assigned by: ${assignedBy ? assignedBy.email : 'Unknown'}<br>
+                                <i class="fas fa-calendar"></i> ${assignedAt}
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Your Permissions:</strong>
+                            ${permissionsHtml}
+                        </div>
+                        
+                        <div class="d-flex flex-wrap">
+                            ${accessButtons}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return cardDiv;
+        }
+
+        // Get service URL
+        function getServiceUrl(service) {
+            const serviceUrls = {
+                'S3': '/uws-s3.html',
+                'Lambda': '/uws-lambda.html',
+                'NoSQL': '/uws-nosql.html',
+                'DNS': '/uws-dns.html',
+                'Monitoring': '/uws-monitoring.html',
+                'Billing': '/uws-billing.html',
+                'AI': '/uws-ai.html',
+                'Compute': '/uws-compute.html',
+                'RDB': '/uws-rdb.html',
+                'Secrets': '/uws-secrets.html',
+                'SQS': '/uws-sqs.html'
+            };
+            return serviceUrls[service] || '#';
+        }
+
         // Display roles
         function displayRoles(roles) {
             const container = document.getElementById('rolesList');
@@ -556,6 +745,9 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <button class="btn btn-sm btn-primary" onclick="assignUserToRole(${role.id})">
                                     <i class="fas fa-user-plus"></i> Assign User
+                                </button>
+                                <button class="btn btn-sm btn-warning" onclick="editRole(${role.id})">
+                                    <i class="fas fa-edit"></i> Edit
                                 </button>
                                 <button class="btn btn-sm btn-danger" onclick="deleteRole(${role.id})">
                                     <i class="fas fa-trash"></i>
@@ -738,10 +930,138 @@
             }
         }
 
+        // Edit role
+        async function editRole(roleId) {
+            try {
+                const response = await fetchWithAuth(`/uws-iam/roles/${roleId}`);
+                const role = await response.json();
+                
+                if (role.success) {
+                    const roleData = role.role;
+                    
+                    // Populate the edit form
+                    document.getElementById('editRoleName').value = roleData.name;
+                    document.getElementById('editRoleDescription').value = roleData.description || '';
+                    
+                    // Generate permissions UI for editing
+                    generateEditPermissionsUI(roleData.permissions);
+                    
+                    // Store the role ID for updating
+                    document.getElementById('editRoleForm').dataset.roleId = roleId;
+                    
+                    // Show the modal
+                    const modal = new bootstrap.Modal(document.getElementById('editRoleModal'));
+                    modal.show();
+                } else {
+                    alert('Error loading role: ' + role.error);
+                }
+            } catch (error) {
+                console.error('Error loading role for editing:', error);
+                alert('Error loading role for editing');
+            }
+        }
+
+        // Generate permissions UI for editing
+        function generateEditPermissionsUI(existingPermissions) {
+            const container = document.getElementById('editPermissionsContainer');
+            container.innerHTML = '';
+
+            services.forEach(service => {
+                const serviceCard = document.createElement('div');
+                serviceCard.className = 'service-card';
+                serviceCard.innerHTML = `
+                    <h6><i class="fas fa-cog"></i> ${service}</h6>
+                    <div class="row">
+                        ${serviceResources[service].map(resource => {
+                            const permissionKey = `${service}:${resource}`;
+                            const currentPermission = existingPermissions[permissionKey] || '';
+                            return `
+                                <div class="col-md-6">
+                                    <div class="permission-toggle">
+                                        <span>${resource}</span>
+                                        <select class="form-select form-select-sm" data-service="${service}" data-resource="${resource}">
+                                            <option value="">No Access</option>
+                                            <option value="READ" ${currentPermission === 'READ' ? 'selected' : ''}>Read</option>
+                                            <option value="WRITE" ${currentPermission === 'WRITE' ? 'selected' : ''}>Write</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+                container.appendChild(serviceCard);
+            });
+        }
+
+        // Update role
+        async function updateRole() {
+            const roleId = document.getElementById('editRoleForm').dataset.roleId;
+            const name = document.getElementById('editRoleName').value;
+            const description = document.getElementById('editRoleDescription').value;
+            
+            if (!name) {
+                alert('Please enter a role name');
+                return;
+            }
+
+            const permissions = {};
+            document.querySelectorAll('#editPermissionsContainer [data-service][data-resource]').forEach(select => {
+                const service = select.dataset.service;
+                const resource = select.dataset.resource;
+                const permission = select.value;
+                if (permission) {
+                    permissions[`${service}:${resource}`] = permission;
+                }
+            });
+
+            console.log('Updating role with data:', {
+                id: roleId,
+                name: name,
+                description: description,
+                permissions: permissions
+            });
+
+            try {
+                const response = await fetchWithAuth(`/uws-iam/roles/${roleId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        description: description,
+                        permissions: permissions
+                    })
+                });
+
+                console.log('Response status:', response.status);
+                const result = await response.json();
+                console.log('Response data:', result);
+
+                if (result.success) {
+                    alert('Role updated successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error updating role:', error);
+                alert('Error updating role: ' + error.message);
+            }
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('jwtToken');
+            window.location.href = '/login.html';
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             loadServices();
             loadRoles();
+            loadMyRoles();
         });
     </script>
 </body>

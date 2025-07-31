@@ -11,8 +11,10 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,6 +32,12 @@ public class S3Service {
 
     @Autowired
     private UserStorageQuotaRepository quotaRepository;
+
+    @Autowired
+    private IAMService iamService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     private final Path uploadPath = Paths.get("uploads");
 
@@ -67,9 +75,42 @@ public class S3Service {
     }
 
     public List<Map<String, Object>> listBuckets(String userEmail) {
-        List<Bucket> buckets = bucketRepository.findByOwnerEmail(userEmail);
+        User user = userRepository.findByEmail(userEmail);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
         
-        return buckets.stream()
+        System.out.println("Listing buckets for user: " + userEmail);
+        
+        // Get buckets owned by the user
+        List<Bucket> ownedBuckets = bucketRepository.findByOwnerEmail(userEmail);
+        System.out.println("User owns " + ownedBuckets.size() + " buckets");
+        
+        // Check if user has S3:buckets permission
+        boolean hasS3Permission = iamService.hasPermission(user, "S3", "buckets", "READ");
+        System.out.println("User has S3:buckets READ permission: " + hasS3Permission);
+        
+        List<Bucket> accessibleBuckets = new ArrayList<>(ownedBuckets);
+        
+        // If user has S3:buckets permission, also include buckets they have permission to view
+        if (hasS3Permission) {
+            // Get all buckets and filter by permission
+            List<Bucket> allBuckets = bucketRepository.findAll();
+            System.out.println("Total buckets in system: " + allBuckets.size());
+            for (Bucket bucket : allBuckets) {
+                // Skip buckets already owned by the user
+                if (!bucket.getOwnerEmail().equals(userEmail)) {
+                    // For now, if user has S3:buckets READ permission, they can see all buckets
+                    // In a more granular system, you might check specific bucket permissions
+                    accessibleBuckets.add(bucket);
+                    System.out.println("Added shared bucket: " + bucket.getName() + " (owned by: " + bucket.getOwnerEmail() + ")");
+                }
+            }
+        }
+        
+        System.out.println("Total accessible buckets: " + accessibleBuckets.size());
+        
+        return accessibleBuckets.stream()
             .map(bucket -> {
                 Map<String, Object> bucketMap = new HashMap<>();
                 bucketMap.put("id", bucket.getId());
@@ -78,9 +119,18 @@ public class S3Service {
                 bucketMap.put("createdAt", bucket.getCreatedAt());
                 bucketMap.put("updatedAt", bucket.getUpdatedAt());
                 
-                // Get bucket statistics
-                Long fileCount = fileMetadataRepository.countFilesInBucket(bucket.getName(), userEmail);
-                Long totalSize = fileMetadataRepository.getTotalStorageUsedInBucket(bucket.getName(), userEmail);
+                // Get bucket statistics - for owned buckets, use user's files
+                // For shared buckets, get all files in the bucket
+                Long fileCount;
+                Long totalSize;
+                if (bucket.getOwnerEmail().equals(userEmail)) {
+                    fileCount = fileMetadataRepository.countFilesInBucket(bucket.getName(), userEmail);
+                    totalSize = fileMetadataRepository.getTotalStorageUsedInBucket(bucket.getName(), userEmail);
+                } else {
+                    // For shared buckets, count all files regardless of owner
+                    fileCount = fileMetadataRepository.countAllFilesInBucket(bucket.getName());
+                    totalSize = fileMetadataRepository.getTotalStorageUsedInBucketAll(bucket.getName());
+                }
                 bucketMap.put("fileCount", fileCount != null ? fileCount : 0);
                 bucketMap.put("totalSize", totalSize != null ? totalSize : 0);
                 
@@ -221,37 +271,70 @@ public class S3Service {
     }
 
     public List<Map<String, Object>> listFiles(String bucketName, String userEmail, String searchTerm, String fileType) {
-        // Check bucket ownership
+        User user = userRepository.findByEmail(userEmail);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+        
+        // Check bucket exists
         Bucket bucket = bucketRepository.findByName(bucketName);
         if (bucket == null) {
             throw new RuntimeException("Bucket not found");
         }
-        if (!bucket.getOwnerEmail().equals(userEmail)) {
+        
+        // Check if user owns the bucket or has permission to access it
+        boolean isOwner = bucket.getOwnerEmail().equals(userEmail);
+        boolean hasPermission = iamService.hasPermission(user, "S3", "buckets", "READ");
+        
+        if (!isOwner && !hasPermission) {
             throw new RuntimeException("Access denied");
         }
 
         List<FileMetadata> files;
         
-        // Apply combined filters
+        // Apply combined filters - if owner, show only their files; if has permission, show all files
         if (searchTerm != null && !searchTerm.trim().isEmpty() && fileType != null && !fileType.trim().isEmpty()) {
             // Both search term and file type filter
-            files = fileMetadataRepository.findByBucketNameAndOwnerEmailAndOriginalFileNameContainingIgnoreCase(
-                bucketName, userEmail, searchTerm.trim());
-            // Filter by content type in memory
-            files = files.stream()
-                .filter(file -> file.getContentType().toLowerCase().contains(fileType.trim().toLowerCase()))
-                .collect(Collectors.toList());
+            if (isOwner) {
+                files = fileMetadataRepository.findByBucketNameAndOwnerEmailAndOriginalFileNameContainingIgnoreCase(
+                    bucketName, userEmail, searchTerm.trim());
+                // Filter by content type in memory
+                files = files.stream()
+                    .filter(file -> file.getContentType().toLowerCase().contains(fileType.trim().toLowerCase()))
+                    .collect(Collectors.toList());
+            } else {
+                files = fileMetadataRepository.findByBucketNameAndOriginalFileNameContainingIgnoreCase(
+                    bucketName, searchTerm.trim());
+                // Filter by content type in memory
+                files = files.stream()
+                    .filter(file -> file.getContentType().toLowerCase().contains(fileType.trim().toLowerCase()))
+                    .collect(Collectors.toList());
+            }
         } else if (searchTerm != null && !searchTerm.trim().isEmpty()) {
             // Only search term filter
-            files = fileMetadataRepository.findByBucketNameAndOwnerEmailAndOriginalFileNameContainingIgnoreCase(
-                bucketName, userEmail, searchTerm.trim());
+            if (isOwner) {
+                files = fileMetadataRepository.findByBucketNameAndOwnerEmailAndOriginalFileNameContainingIgnoreCase(
+                    bucketName, userEmail, searchTerm.trim());
+            } else {
+                files = fileMetadataRepository.findByBucketNameAndOriginalFileNameContainingIgnoreCase(
+                    bucketName, searchTerm.trim());
+            }
         } else if (fileType != null && !fileType.trim().isEmpty()) {
             // Only file type filter
-            files = fileMetadataRepository.findByBucketNameAndOwnerEmailAndContentTypeContaining(
-                bucketName, userEmail, fileType.trim());
+            if (isOwner) {
+                files = fileMetadataRepository.findByBucketNameAndOwnerEmailAndContentTypeContaining(
+                    bucketName, userEmail, fileType.trim());
+            } else {
+                files = fileMetadataRepository.findByBucketNameAndContentTypeContaining(
+                    bucketName, fileType.trim());
+            }
         } else {
             // No filters
-            files = fileMetadataRepository.findByBucketNameAndOwnerEmail(bucketName, userEmail);
+            if (isOwner) {
+                files = fileMetadataRepository.findByBucketNameAndOwnerEmail(bucketName, userEmail);
+            } else {
+                files = fileMetadataRepository.findByBucketName(bucketName);
+            }
         }
 
         return files.stream()

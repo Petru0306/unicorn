@@ -34,6 +34,14 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
     List<FileMetadata> findByBucketNameAndOwnerEmailAndOriginalFileNameContainingIgnoreCase(
         String bucketName, String ownerEmail, String fileName);
     
+    // Find all files in bucket by name pattern (regardless of owner)
+    List<FileMetadata> findByBucketNameAndOriginalFileNameContainingIgnoreCase(
+        String bucketName, String fileName);
+    
+    // Find all files in bucket by content type (regardless of owner)
+    List<FileMetadata> findByBucketNameAndContentTypeContaining(
+        String bucketName, String contentType);
+    
     // Find files by size range
     @Query("SELECT f FROM FileMetadata f WHERE f.bucketName = :bucketName AND f.ownerEmail = :ownerEmail AND f.fileSize BETWEEN :minSize AND :maxSize")
     List<FileMetadata> findByBucketNameAndOwnerEmailAndFileSizeBetween(
@@ -50,6 +58,10 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
     @Query("SELECT SUM(f.fileSize) FROM FileMetadata f WHERE f.bucketName = :bucketName AND f.ownerEmail = :ownerEmail")
     Long getTotalStorageUsedInBucket(@Param("bucketName") String bucketName, @Param("ownerEmail") String ownerEmail);
     
+    // Get total storage used in a bucket (regardless of owner)
+    @Query("SELECT SUM(f.fileSize) FROM FileMetadata f WHERE f.bucketName = :bucketName")
+    Long getTotalStorageUsedInBucketAll(@Param("bucketName") String bucketName);
+    
     // Count files by user
     @Query("SELECT COUNT(f) FROM FileMetadata f WHERE f.ownerEmail = :ownerEmail")
     Long countFilesByUser(@Param("ownerEmail") String ownerEmail);
@@ -57,6 +69,10 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
     // Count files in bucket
     @Query("SELECT COUNT(f) FROM FileMetadata f WHERE f.bucketName = :bucketName AND f.ownerEmail = :ownerEmail")
     Long countFilesInBucket(@Param("bucketName") String bucketName, @Param("ownerEmail") String ownerEmail);
+    
+    // Count all files in bucket (regardless of owner)
+    @Query("SELECT COUNT(f) FROM FileMetadata f WHERE f.bucketName = :bucketName")
+    Long countAllFilesInBucket(@Param("bucketName") String bucketName);
     
     // Find files uploaded in date range
     @Query("SELECT f FROM FileMetadata f WHERE f.ownerEmail = :ownerEmail AND f.uploadedAt BETWEEN :startDate AND :endDate ORDER BY f.uploadedAt DESC")

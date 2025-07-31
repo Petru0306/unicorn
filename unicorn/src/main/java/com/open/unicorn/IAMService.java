@@ -61,11 +61,15 @@ public class IAMService {
     
     // Assign role to user
     public UserRole assignRoleToUser(User user, IAMRole role, User assignedBy) {
+        System.out.println("Assigning role '" + role.getName() + "' to user '" + user.getEmail() + "' by '" + assignedBy.getEmail() + "'");
+        
         // Remove existing role if any
         userRoleRepository.deleteByUser(user);
         
         UserRole userRole = new UserRole(user, role, assignedBy);
-        return userRoleRepository.save(userRole);
+        UserRole savedUserRole = userRoleRepository.save(userRole);
+        System.out.println("Role assigned successfully with ID: " + savedUserRole.getId());
+        return savedUserRole;
     }
     
     // Get users with a specific role
@@ -84,12 +88,56 @@ public class IAMService {
         return userRole.map(UserRole::getRole);
     }
     
+    // Get all roles assigned to a user
+    public List<UserRole> getUserRoles(User user) {
+        Optional<UserRole> userRole = userRoleRepository.findByUser(user);
+        if (userRole.isPresent()) {
+            return List.of(userRole.get());
+        }
+        return new ArrayList<>();
+    }
+    
+    // Get roles assigned to a user with role details
+    public List<Map<String, Object>> getUserRolesWithDetails(User user) {
+        System.out.println("Getting user roles for: " + user.getEmail());
+        List<UserRole> userRoles = getUserRoles(user);
+        System.out.println("Found " + userRoles.size() + " user roles");
+        
+        List<Map<String, Object>> result = new ArrayList<>();
+        
+        for (UserRole userRole : userRoles) {
+            System.out.println("Processing role: " + userRole.getRole().getName());
+            Map<String, Object> roleInfo = new HashMap<>();
+            roleInfo.put("id", userRole.getId());
+            roleInfo.put("role", userRole.getRole());
+            roleInfo.put("assignedBy", userRole.getAssignedBy());
+            roleInfo.put("assignedAt", userRole.getAssignedAt());
+            roleInfo.put("permissions", userRole.getRole().getPermissions());
+            result.add(roleInfo);
+        }
+        
+        System.out.println("Returning " + result.size() + " role details");
+        return result;
+    }
+    
     // Check if user has permission
     public boolean hasPermission(User user, String service, String resource, String requiredPermission) {
-        Optional<IAMRole> role = getUserRole(user);
-        if (role.isEmpty()) return false;
+        System.out.println("Checking permission for user: " + user.getEmail() + ", service: " + service + ", resource: " + resource + ", required: " + requiredPermission);
         
-        return role.get().hasPermission(service, resource, requiredPermission);
+        Optional<IAMRole> role = getUserRole(user);
+        if (role.isEmpty()) {
+            System.out.println("User has no role assigned");
+            return false;
+        }
+        
+        IAMRole userRole = role.get();
+        System.out.println("User has role: " + userRole.getName());
+        System.out.println("Role permissions: " + userRole.getPermissions());
+        
+        boolean hasPermission = userRole.hasPermission(service, resource, requiredPermission);
+        System.out.println("Permission check result: " + hasPermission);
+        
+        return hasPermission;
     }
     
     // Get all users with roles for an owner
@@ -102,6 +150,36 @@ public class IAMService {
         return userRoleRepository.findByRoleOwnerAndUserSearch(owner, searchTerm);
     }
     
+    // Get role by ID (only if user is the owner)
+    public IAMRole getRoleById(Long roleId, User owner) {
+        Optional<IAMRole> role = roleRepository.findById(roleId);
+        if (role.isPresent() && role.get().getCreatedBy().equals(owner)) {
+            return role.get();
+        }
+        return null; // Role not found or user doesn't have permission
+    }
+
+    // Update role
+    public IAMRole updateRole(Long roleId, String name, String description, Map<String, String> permissions, User owner) {
+        Optional<IAMRole> role = roleRepository.findById(roleId);
+        if (role.isPresent() && role.get().getCreatedBy().equals(owner)) {
+            IAMRole existingRole = role.get();
+            
+            // Check if new name conflicts with existing role (excluding current role)
+            if (!name.equals(existingRole.getName()) && roleRepository.existsByName(name)) {
+                throw new RuntimeException("Role with name '" + name + "' already exists");
+            }
+            
+            // Update role properties
+            existingRole.setName(name);
+            existingRole.setDescription(description);
+            existingRole.setPermissions(permissions);
+            
+            return roleRepository.save(existingRole);
+        }
+        return null; // Role not found or user doesn't have permission
+    }
+
     // Delete role
     public void deleteRole(Long roleId, User owner) {
         Optional<IAMRole> role = roleRepository.findById(roleId);

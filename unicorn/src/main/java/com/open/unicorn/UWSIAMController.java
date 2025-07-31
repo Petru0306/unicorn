@@ -133,6 +133,95 @@ public class UWSIAMController {
         return ResponseEntity.ok(roles);
     }
     
+    // Get role by ID API
+    @GetMapping("/roles/{roleId}")
+    @ResponseBody
+    public ResponseEntity<?> getRoleById(@PathVariable Long roleId, HttpServletRequest httpRequest) {
+        String userEmail = getCurrentUserEmail(httpRequest);
+        if (userEmail == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "User not authenticated");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+        
+        User currentUser = userRepository.findByEmail(userEmail);
+        if (currentUser == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "User not found");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+        
+        try {
+            IAMRole role = iamService.getRoleById(roleId, currentUser);
+            
+            Map<String, Object> response = new HashMap<>();
+            if (role != null) {
+                response.put("success", true);
+                response.put("role", role);
+            } else {
+                response.put("success", false);
+                response.put("error", "Role not found or you don't have permission to access it");
+            }
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Error getting role: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    // Update role API
+    @PutMapping("/roles/{roleId}")
+    @ResponseBody
+    public ResponseEntity<?> updateRole(@PathVariable Long roleId, @RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
+        String userEmail = getCurrentUserEmail(httpRequest);
+        if (userEmail == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "User not authenticated");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+        
+        User currentUser = userRepository.findByEmail(userEmail);
+        if (currentUser == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "User not found");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+        
+        try {
+            String name = (String) request.get("name");
+            String description = (String) request.get("description");
+            @SuppressWarnings("unchecked")
+            Map<String, String> permissions = (Map<String, String>) request.get("permissions");
+            
+            System.out.println("Updating role: " + roleId + " for user: " + currentUser.getEmail());
+            System.out.println("New name: " + name + ", description: " + description);
+            System.out.println("New permissions: " + permissions);
+            
+            IAMRole updatedRole = iamService.updateRole(roleId, name, description, permissions, currentUser);
+            
+            Map<String, Object> response = new HashMap<>();
+            if (updatedRole != null) {
+                response.put("success", true);
+                response.put("role", updatedRole);
+            } else {
+                response.put("success", false);
+                response.put("error", "Role not found or you don't have permission to update it");
+            }
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Error updating role: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
     // Delete role API
     @DeleteMapping("/roles/{roleId}")
     @ResponseBody
@@ -284,6 +373,45 @@ public class UWSIAMController {
         response.put("services", iamService.getAvailableServices());
         response.put("serviceResources", IAMService.SERVICE_RESOURCES);
         return ResponseEntity.ok(response);
+    }
+    
+    // Get current user's assigned roles
+    @GetMapping("/my-roles")
+    @ResponseBody
+    public ResponseEntity<?> getMyRoles(HttpServletRequest httpRequest) {
+        String userEmail = getCurrentUserEmail(httpRequest);
+        if (userEmail == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "User not authenticated");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+        
+        User currentUser = userRepository.findByEmail(userEmail);
+        if (currentUser == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "User not found");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+        
+        try {
+            System.out.println("Getting roles for user: " + currentUser.getEmail());
+            List<Map<String, Object>> userRoles = iamService.getUserRolesWithDetails(currentUser);
+            System.out.println("Found " + userRoles.size() + " roles for user");
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("userRoles", userRoles);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("Error getting user roles: " + e.getMessage());
+            e.printStackTrace();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
     
     // Helper method to get current user email from JWT

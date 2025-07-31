@@ -100,14 +100,25 @@ public class IAMRole {
     }
     
     public boolean hasPermission(String service, String resource, String requiredPermission) {
+        String key = service + ":" + resource;
         String permission = getPermission(service, resource);
-        if (permission == null) return false;
+        System.out.println("Checking permission for key: " + key + ", found permission: " + permission + ", required: " + requiredPermission);
+        
+        if (permission == null) {
+            System.out.println("No permission found for key: " + key);
+            return false;
+        }
         
         if ("WRITE".equals(requiredPermission)) {
-            return "WRITE".equals(permission);
+            boolean result = "WRITE".equals(permission);
+            System.out.println("WRITE permission check result: " + result);
+            return result;
         } else if ("READ".equals(requiredPermission)) {
-            return "READ".equals(permission) || "WRITE".equals(permission);
+            boolean result = "READ".equals(permission) || "WRITE".equals(permission);
+            System.out.println("READ permission check result: " + result);
+            return result;
         }
+        System.out.println("Unknown permission type: " + requiredPermission);
         return false;
     }
 } 

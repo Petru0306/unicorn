@@ -31,6 +31,9 @@ public class UWSRDBController {
 
     @Autowired
     private DockerService dockerService;
+    
+    @Autowired
+    private IAMService iamService;
 
     // Create a new database instance
     @PostMapping("/instances")
@@ -113,10 +116,39 @@ public class UWSRDBController {
                 return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
             }
 
-            List<DatabaseInstance> instances = databaseInstanceRepository.findByUserId(user.getId());
+            System.out.println("Listing RDB instances for user: " + userEmail);
+            
+            // Get instances owned by the user
+            List<DatabaseInstance> ownedInstances = databaseInstanceRepository.findByUserId(user.getId());
+            System.out.println("User owns " + ownedInstances.size() + " RDB instances");
+            
+            // Check if user has RDB:instances permission
+            boolean hasRDBPermission = iamService.hasPermission(user, "RDB", "instances", "READ");
+            System.out.println("User has RDB:instances READ permission: " + hasRDBPermission);
+            
+            List<DatabaseInstance> accessibleInstances = new ArrayList<>(ownedInstances);
+            
+            // If user has RDB:instances permission, also include instances they have permission to view
+            if (hasRDBPermission) {
+                // Get all instances and filter by permission
+                List<DatabaseInstance> allInstances = databaseInstanceRepository.findAll();
+                System.out.println("Total RDB instances in system: " + allInstances.size());
+                for (DatabaseInstance instance : allInstances) {
+                    // Skip instances already owned by the user
+                    if (!instance.getUser().getId().equals(user.getId())) {
+                        // For now, if user has RDB:instances READ permission, they can see all instances
+                        // In a more granular system, you might check specific instance permissions
+                        accessibleInstances.add(instance);
+                        System.out.println("Added shared RDB instance: " + instance.getDbName() + " (owned by: " + instance.getUser().getEmail() + ")");
+                    }
+                }
+            }
+            
+            System.out.println("Total accessible RDB instances: " + accessibleInstances.size());
+            
             List<Map<String, Object>> response = new ArrayList<>();
 
-            for (DatabaseInstance instance : instances) {
+            for (DatabaseInstance instance : accessibleInstances) {
                 Map<String, Object> instanceMap = new HashMap<>();
                 instanceMap.put("id", instance.getId());
                 instanceMap.put("dbName", instance.getDbName());
@@ -125,6 +157,7 @@ public class UWSRDBController {
                 instanceMap.put("storageLimit", instance.getStorageLimit());
                 instanceMap.put("status", instance.getStatus());
                 instanceMap.put("createdAt", instance.getCreatedAt());
+                instanceMap.put("owner", instance.getUser().getEmail()); // Add owner information
                 response.add(instanceMap);
             }
 
@@ -151,6 +184,7 @@ public class UWSRDBController {
             }
 
             DatabaseInstance instance = instanceOpt.get();
+            // Delete requires ownership - check if user owns the instance
             if (!instance.getUser().getId().equals(user.getId())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Access denied"));
             }
@@ -188,7 +222,11 @@ public class UWSRDBController {
             }
 
             DatabaseInstance instance = instanceOpt.get();
-            if (!instance.getUser().getId().equals(user.getId())) {
+            // Check if user owns the instance or has permission to access it
+            boolean isOwner = instance.getUser().getId().equals(user.getId());
+            boolean hasPermission = iamService.hasPermission(user, "RDB", "instances", "READ");
+            
+            if (!isOwner && !hasPermission) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Access denied"));
             }
 
@@ -242,6 +280,12 @@ public class UWSRDBController {
             Authentication authentication) {
         try {
             String userEmail = authentication.getName();
+            User user = userRepository.findByEmail(userEmail);
+            
+            if (user == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
+            }
+            
             Container container = containerRepository.findByInstanceId(instanceId);
 
             if (container == null) {
@@ -249,7 +293,11 @@ public class UWSRDBController {
                     .body(Map.of("error", "Container not found"));
             }
 
-            if (!container.getOwnerEmail().equals(userEmail)) {
+            // Check if user owns the container or has permission to access it
+            boolean isOwner = container.getOwnerEmail().equals(userEmail);
+            boolean hasPermission = iamService.hasPermission(user, "RDB", "instances", "READ");
+            
+            if (!isOwner && !hasPermission) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Access denied"));
             }
@@ -366,7 +414,11 @@ public class UWSRDBController {
             }
 
             DatabaseInstance instance = instanceOpt.get();
-            if (!instance.getUser().getId().equals(user.getId())) {
+            // Check if user owns the instance or has permission to access it
+            boolean isOwner = instance.getUser().getId().equals(user.getId());
+            boolean hasPermission = iamService.hasPermission(user, "RDB", "instances", "READ");
+            
+            if (!isOwner && !hasPermission) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Access denied"));
             }
 
@@ -438,7 +490,11 @@ public class UWSRDBController {
             }
 
             DatabaseInstance instance = instanceOpt.get();
-            if (!instance.getUser().getId().equals(user.getId())) {
+            // Check if user owns the instance or has permission to access it
+            boolean isOwner = instance.getUser().getId().equals(user.getId());
+            boolean hasPermission = iamService.hasPermission(user, "RDB", "instances", "READ");
+            
+            if (!isOwner && !hasPermission) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Access denied"));
             }
 
@@ -541,7 +597,11 @@ public class UWSRDBController {
             }
 
             DatabaseInstance instance = instanceOpt.get();
-            if (!instance.getUser().getId().equals(user.getId())) {
+            // Check if user owns the instance or has permission to access it
+            boolean isOwner = instance.getUser().getId().equals(user.getId());
+            boolean hasPermission = iamService.hasPermission(user, "RDB", "instances", "READ");
+            
+            if (!isOwner && !hasPermission) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Access denied"));
             }
 
@@ -579,7 +639,11 @@ public class UWSRDBController {
             }
 
             DatabaseInstance instance = instanceOpt.get();
-            if (!instance.getUser().getId().equals(user.getId())) {
+            // Check if user owns the instance or has permission to access it
+            boolean isOwner = instance.getUser().getId().equals(user.getId());
+            boolean hasPermission = iamService.hasPermission(user, "RDB", "instances", "READ");
+            
+            if (!isOwner && !hasPermission) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Access denied"));
             }
 
