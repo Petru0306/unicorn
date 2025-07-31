@@ -1,0 +1,10 @@
+/* Favicon styling for circular appearance */
+link[rel="icon"] {
+    border-radius: 50%;
+}
+
+/* Ensure the favicon image itself is circular */
+.favicon {
+    border-radius: 50%;
+    object-fit: cover;
+} 
