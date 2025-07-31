@@ -10,6 +10,119 @@
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .sidebar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin: 0.25rem 1rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: #495057;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .nav-link i {
+            width: 20px;
+            margin-right: 12px;
+            font-size: 1.1rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .top-navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            padding: 1rem 2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #667eea;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .sidebar-toggle {
+                display: block !important;
+            }
         }
         .navbar {
             background: rgba(255, 255, 255, 0.95) !important;
@@ -107,31 +220,107 @@
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/dashboard.html">🦄 Unicorn</a>
-            <div class="navbar-nav ms-auto">
-                <a href="/dashboard.html" class="btn btn-outline-primary btn-custom me-2">
-                    <i class="fas fa-home"></i> Dashboard
-                </a>
-                <a href="/uws-s3.html" class="btn btn-outline-primary btn-custom me-2">
-                    <i class="fas fa-cloud"></i> UWS-S3
-                </a>
-                <a href="/uws-rdb.html" class="btn btn-outline-primary btn-custom me-2">
-                    <i class="fas fa-database"></i> UWS-RDB
-                </a>
-                <a href="/uws-sqs.html" class="btn btn-outline-primary btn-custom me-2">
-                    <i class="fas fa-envelope-open-text"></i> UWS-SQS
-                </a>
-                <button class="btn btn-danger btn-custom" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
-            </div>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="/dashboard.html" class="sidebar-brand">🦄 Unicorn</a>
         </div>
-    </nav>
+        <nav class="sidebar-nav">
+            <div class="nav-item">
+                <a href="/dashboard.html" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/uws-billing.html" class="nav-link">
+                    <i class="fas fa-credit-card"></i>
+                    UWS-Billing
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/uws-monitoring.html" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    UWS-Monitoring
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/uws-s3.html" class="nav-link">
+                    <i class="fas fa-cloud"></i>
+                    UWS-S3
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/uws-compute.html" class="nav-link">
+                    <i class="fas fa-server"></i>
+                    UWS-Compute
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/uws-lambda.html" class="nav-link">
+                    <i class="fas fa-code"></i>
+                    UWS-Lambda
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/uws-rdb.html" class="nav-link">
+                    <i class="fas fa-database"></i>
+                    UWS-RDB
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/uws-sqs.html" class="nav-link">
+                    <i class="fas fa-envelope-open-text"></i>
+                    UWS-SQS
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/uws-nosql.html" class="nav-link">
+                    <i class="fas fa-database"></i>
+                    UWS-NoSQL
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/uws-ai.html" class="nav-link">
+                    <i class="fas fa-brain"></i>
+                    UWS-AI
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/uws-secrets.html" class="nav-link">
+                    <i class="fas fa-key"></i>
+                    UWS-Secrets
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/uws-dns.html" class="nav-link">
+                    <i class="fas fa-globe"></i>
+                    UWS-DNS
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/uws-iam.html" class="nav-link">
+                    <i class="fas fa-users-cog"></i>
+                    UWS-IAM
+                </a>
+            </div>
+        </nav>
+    </div>
 
-    <div class="container">
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navigation -->
+        <div class="top-navbar">
+            <div class="d-flex align-items-center">
+                <button class="sidebar-toggle me-3" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h4 class="mb-0">UWS-Compute Container Service</h4>
+            </div>
+            <button class="btn btn-outline-danger" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="container">
         <div class="main-container">
             <div class="row mb-4">
                 <div class="col-12">
@@ -922,6 +1111,45 @@
                 refreshButton.innerHTML = originalText;
                 refreshButton.disabled = false;
             }
+        }
+
+        // Sidebar functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('show');
+                });
+            }
+
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth <= 768) {
+                    if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+                        sidebar.classList.remove('show');
+                    }
+                }
+            });
+
+            // Set active nav link based on current page
+            const currentPage = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            navLinks.forEach(link => {
+                if (link.getAttribute('href') === currentPage) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        });
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('jwtToken');
+            window.location.href = '/login.html';
         }
     </script>
 </body>
